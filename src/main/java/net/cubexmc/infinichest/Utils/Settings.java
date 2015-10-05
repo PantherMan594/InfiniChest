@@ -51,7 +51,7 @@ public class Settings {
         }
         Settings settings = new Settings();
         settings.setId(uuid);
-        settings.max(uuid);
+        settings.setMax(uuid);
         if (!isNew) {
             FileConfiguration con = YamlConfiguration.loadConfiguration(f);
             settings.setName(con.getString("settings.lastname"));
@@ -107,23 +107,6 @@ public class Settings {
         return this;
     }
 
-    public Settings max(UUID uuid) {
-        Player p = Bukkit.getPlayer(uuid);
-        if (p == null) {
-            this.max = 1000;
-            return this;
-        }
-        for (int i = 0; i < 1000; i++) {
-            int j = 1000 - i;
-            if (p.hasPermission("InfiniChest.size." + j)) {
-                this.max = j;
-                return this;
-            }
-        }
-        this.max = 1;
-        return this;
-    }
-
     public String getName() {
         return name;
     }
@@ -164,6 +147,23 @@ public class Settings {
 
     public Integer getMax() {
         return max;
+    }
+
+    public Settings setMax(UUID uuid) {
+        Player p = Bukkit.getPlayer(uuid);
+        if (p == null) {
+            this.max = 1000;
+            return this;
+        }
+        for (int i = 0; i < 1000; i++) {
+            int j = 1000 - i;
+            if (p.hasPermission("InfiniChest.size." + j)) {
+                this.max = j + 1;
+                return this;
+            }
+        }
+        this.max = 1;
+        return this;
     }
 
 }
