@@ -67,7 +67,7 @@ public class Chests {
     public static void formatChests(UUID uuid, String name) {
         HashMap<Integer, Inventory> chests = new HashMap<>();
         for (int i = 1; i < 1001; i++) {
-            Inventory chest = Bukkit.createInventory(null, 54, name + "'s Chest (Page " + i + ")");
+            Inventory chest = Bukkit.createInventory(null, 54, name + "'s Chest p. " + i);
             if (Main.settingsMap.get(uuid).getItems().containsKey(i)) {
                 chest.setContents(Main.settingsMap.get(uuid).getItems().get(i));
             }

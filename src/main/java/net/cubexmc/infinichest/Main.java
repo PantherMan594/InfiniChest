@@ -99,8 +99,8 @@ public class Main extends JavaPlugin implements Listener {
     public void close(InventoryCloseEvent e) {
         Player p = (Player) e.getPlayer();
         if (openChests.containsKey(p.getUniqueId())) {
-            if (e.getInventory().getName().contains("'s Chest (Page ")) {
-                Integer page = Integer.valueOf(e.getInventory().getName().replaceFirst("[\\W\\w]+\\(Page ", "").replace(")", ""));
+            if (e.getInventory().getName().contains("'s Chest p. ")) {
+                Integer page = Integer.valueOf(e.getInventory().getName().replaceFirst("[\\D]+", ""));
                 HashMap<Integer, Inventory> chests = Main.chestsMap.get(p.getUniqueId());
                 chests.put(page, e.getInventory());
                 Settings settings = settingsMap.get(p.getUniqueId());
@@ -117,9 +117,9 @@ public class Main extends JavaPlugin implements Listener {
         if (e.getCurrentItem() != null && e.getCurrentItem().getItemMeta() != null && e.getCurrentItem().getItemMeta().getLore() != null && !e.getCurrentItem().getItemMeta().getLore().isEmpty() && e.getCurrentItem().getItemMeta().getLore().get(0).contains("*")) {
             Player p = (Player) e.getWhoClicked();
             UUID owner = openChests.get(p.getUniqueId());
-            if (e.getClickedInventory().getName().contains("'s Chest (Page ")) {
+            if (e.getClickedInventory().getName().contains("'s Chest p. ")) {
                 e.setCancelled(true);
-                Integer page = Integer.valueOf(e.getClickedInventory().getName().replaceFirst("[\\W\\w]+\\(Page ", "").replace(")", ""));
+                Integer page = Integer.valueOf(e.getClickedInventory().getName().replaceFirst("[\\D]+", ""));
                 HashMap<Integer, Inventory> chests;
                 Settings settings;
                 ItemStack item;
