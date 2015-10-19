@@ -14,6 +14,8 @@ import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -21,6 +23,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
@@ -44,6 +47,7 @@ public class Main extends JavaPlugin implements Listener {
     public static HashMap<UUID, Inventory> trashMap = new HashMap<>();
     public static HashMap<UUID, UUID> openChests = new HashMap<>();
     public static List<String> identifier = new ArrayList<>();
+    public static HashMap<UUID, ItemStack> tempItem = new HashMap<>();
 
     @Override
     public void onEnable() {
@@ -73,6 +77,22 @@ public class Main extends JavaPlugin implements Listener {
     public void quit(PlayerQuitEvent e) {
         Settings.save(settingsMap.get(e.getPlayer().getUniqueId()));
         settingsMap.remove(e.getPlayer().getUniqueId());
+    }
+
+    @EventHandler
+    public void move(PlayerMoveEvent e) {
+        Player p = e.getPlayer();
+        if (settingsMap.get(p.getUniqueId()).getAutoPickup() > 0) {
+            if (checkNearbyItem(p) && p.getInventory().firstEmpty() < 0) {
+                tempItem.put(p.getUniqueId(), p.getInventory().getItem(9));
+                p.getInventory().clear(9);
+            } else {
+                if (tempItem.containsKey(p.getUniqueId())) {
+                    p.getInventory().setItem(9, tempItem.get(p.getUniqueId()));
+                    tempItem.remove(p.getUniqueId());
+                }
+            }
+        }
     }
 
     @EventHandler
@@ -276,9 +296,18 @@ public class Main extends JavaPlugin implements Listener {
         }
     }
 
+    public boolean checkNearbyItem(Player p) {
+        for (Entity e : p.getNearbyEntities(1.5, 1.5, 1.5)) {
+            if (e.getType() == EntityType.DROPPED_ITEM) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public Integer addItemInventory(Player p, ItemStack stack) {
         if (p.getInventory().firstEmpty() < 0) {
-            for (int i = 0; i < 36; i++) {
+            for (int i = 0; i < 36 && i != 9; i++) {
                 ItemStack item = p.getInventory().getItem(i);
                 if (item != null && item.isSimilar(stack)) {
                     int amt = item.getAmount() + stack.getAmount();
