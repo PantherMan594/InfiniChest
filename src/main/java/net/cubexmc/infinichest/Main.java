@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 David Shen. All Rights Reserved.
+ * Copyright (c) 2015 CubeXMC. All Rights Reserved.
  * Created by PantherMan594.
  */
 
@@ -46,6 +46,7 @@ public class Main extends JavaPlugin implements Listener {
     public static HashMap<UUID, HashMap<Integer, Inventory>> chestsMap = new HashMap<>();
     public static HashMap<UUID, Inventory> trashMap = new HashMap<>();
     public static HashMap<UUID, UUID> openChests = new HashMap<>();
+    public static HashMap<UUID, ArrayList<UUID>> openedOthers = new HashMap<>();
     public static List<String> identifier = new ArrayList<>();
     public static HashMap<UUID, ItemStack> tempItem = new HashMap<>();
 
@@ -77,6 +78,10 @@ public class Main extends JavaPlugin implements Listener {
     public void quit(PlayerQuitEvent e) {
         Settings.save(settingsMap.get(e.getPlayer().getUniqueId()));
         settingsMap.remove(e.getPlayer().getUniqueId());
+        for (UUID uuid : openedOthers.get(e.getPlayer().getUniqueId())) {
+            Settings.save(settingsMap.get(uuid));
+            settingsMap.remove(uuid);
+        }
     }
 
     @EventHandler
@@ -98,17 +103,16 @@ public class Main extends JavaPlugin implements Listener {
     @EventHandler
     public void close(InventoryCloseEvent e) {
         Player p = (Player) e.getPlayer();
-        if (openChests.containsKey(p.getUniqueId())) {
-            if (e.getInventory().getName().contains("'s Chest p. ")) {
-                Integer page = Integer.valueOf(e.getInventory().getName().replaceFirst("[\\D]+", ""));
-                HashMap<Integer, Inventory> chests = Main.chestsMap.get(p.getUniqueId());
-                chests.put(page, e.getInventory());
-                Settings settings = settingsMap.get(p.getUniqueId());
-                settings.setLastPage(page);
-                settingsMap.put(p.getUniqueId(), settings);
-                chestsMap.put(p.getUniqueId(), chests);
-                openChests.remove(p.getUniqueId());
-            }
+        if (openChests.containsKey(p.getUniqueId()) && e.getInventory().getName().contains("'s Chest p. ")) {
+            Integer page = Integer.valueOf(e.getInventory().getName().replaceFirst("[\\S]+'s Chest p\\. ", ""));
+            UUID openUuid = openChests.get(p.getUniqueId());
+            HashMap<Integer, Inventory> chests = Main.chestsMap.get(openUuid);
+            chests.put(page, e.getInventory());
+            Settings settings = settingsMap.get(openUuid);
+            settings.setLastPage(page);
+            settingsMap.put(openUuid, settings);
+            chestsMap.put(openUuid, chests);
+            openChests.remove(p.getUniqueId());
         }
     }
 
@@ -119,7 +123,7 @@ public class Main extends JavaPlugin implements Listener {
             UUID owner = openChests.get(p.getUniqueId());
             if (e.getClickedInventory().getName().contains("'s Chest p. ")) {
                 e.setCancelled(true);
-                Integer page = Integer.valueOf(e.getClickedInventory().getName().replaceFirst("[\\D]+", ""));
+                Integer page = Integer.valueOf(e.getClickedInventory().getName().replaceFirst("[\\S]+'s Chest p\\. ", ""));
                 HashMap<Integer, Inventory> chests;
                 Settings settings;
                 ItemStack item;
@@ -230,6 +234,10 @@ public class Main extends JavaPlugin implements Listener {
         if (se instanceof Player) {
             Player p = (Player) se;
             if (args.length == 0) {
+                if (!Main.settingsMap.containsKey(p.getUniqueId())) {
+                    Main.settingsMap.put(p.getUniqueId(), Settings.load(p.getUniqueId()));
+                    Chests.formatChests(p.getUniqueId(), p.getName());
+                }
                 p.openInventory(Main.chestsMap.get(p.getUniqueId()).get(settingsMap.get(p.getUniqueId()).getLastPage()));
                 openChests.put(p.getUniqueId(), p.getUniqueId());
             } else {
@@ -242,6 +250,14 @@ public class Main extends JavaPlugin implements Listener {
                     }
                     p.openInventory(Main.chestsMap.get(uuid).get(settingsMap.get(uuid).getLastPage()));
                     openChests.put(p.getUniqueId(), uuid);
+                    ArrayList<UUID> list = new ArrayList<>();
+                    if (openedOthers.containsKey(p.getUniqueId())) {
+                        list = openedOthers.get(p.getUniqueId());
+                    }
+                    if (!list.contains(uuid)) {
+                        list.add(uuid);
+                    }
+                    openedOthers.put(p.getUniqueId(), list);
                 } else {
                     p.sendMessage(ChatColor.RED + "UUID not found. Format: /" + lbl + " [UUID].");
                 }

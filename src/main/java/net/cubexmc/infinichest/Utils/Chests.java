@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 David Shen. All Rights Reserved.
+ * Copyright (c) 2015 CubeXMC. All Rights Reserved.
  * Created by PantherMan594.
  */
 
@@ -27,7 +27,7 @@ public class Chests {
 
     public static boolean addItem(Player p, ItemStack stack) {
         HashMap<Integer, Inventory> chests = Main.chestsMap.get(p.getUniqueId());
-        for (int i = 1; i < 3; i++) {
+        for (int i = 1; i < Main.settingsMap.get(p.getUniqueId()).getMax(); i++) {
             Inventory chest = chests.get(i);
             if (chest != null) {
                 for (int j = 0; j < 54; j++) {

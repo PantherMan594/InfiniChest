@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 David Shen. All Rights Reserved.
+ * Copyright (c) 2015 CubeXMC. All Rights Reserved.
  * Created by PantherMan594.
  */
 
