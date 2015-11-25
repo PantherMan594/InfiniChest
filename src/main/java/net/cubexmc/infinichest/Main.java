@@ -62,6 +62,10 @@ public class Main extends JavaPlugin implements Listener {
         for (Player p : Bukkit.getOnlinePlayers()) {
             Settings.save(settingsMap.get(p.getUniqueId()));
             settingsMap.remove(p.getUniqueId());
+            for (UUID uuid : openedOthers.get(p.getUniqueId())) {
+                Settings.save(settingsMap.get(uuid));
+                settingsMap.remove(uuid);
+            }
         }
     }
 
