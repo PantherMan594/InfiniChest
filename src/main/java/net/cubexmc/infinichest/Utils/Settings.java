@@ -38,12 +38,12 @@ public class Settings {
                 Bukkit.getLogger().warning("Unable to create config folder!");
             }
         }
-        if (!new File(Main.plugin.getDataFolder() + File.separator + "playedata").exists()) {
-            if (!new File(Main.plugin.getDataFolder() + File.separator + "playedata").mkdir()) {
+        if (!new File(Main.plugin.getDataFolder() + File.separator + "playerdata").exists()) {
+            if (!new File(Main.plugin.getDataFolder() + File.separator + "playerdata").mkdir()) {
                 Bukkit.getLogger().warning("Unable to create playerdata folder!");
             }
         }
-        File f = new File(Main.plugin.getDataFolder() + File.separator + "playedata" + File.separator + uuid.toString() + ".yml");
+        File f = new File(Main.plugin.getDataFolder() + File.separator + "playerdata" + File.separator + uuid.toString() + ".yml");
         try {
             isNew = f.createNewFile();
         } catch (IOException e) {
@@ -69,9 +69,13 @@ public class Settings {
     }
 
     public static void save(Settings settings) {
-        File f = new File(Main.plugin.getDataFolder() + File.separator + "playedata" + File.separator + settings.getUniqueId() + ".yml");
+        File f = new File(Main.plugin.getDataFolder() + File.separator + "playerdata" + File.separator + settings.getUniqueId() + ".yml");
         FileConfiguration con = YamlConfiguration.loadConfiguration(f);
-        con.set("settings.lastname", Bukkit.getPlayer(settings.getUniqueId()).getName());
+        if (Bukkit.getPlayer(settings.getUniqueId()).getName() != null) {
+            con.set("settings.lastname", Bukkit.getPlayer(settings.getUniqueId()).getName());
+        } else {
+            con.set("settings.lastname", settings.getName());
+        }
         con.set("settings.autopickup", settings.getAutoPickup());
         con.set("settings.lastpage", settings.getLastPage());
         for (int i = 1; i < 1001; i++) {

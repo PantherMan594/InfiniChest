@@ -241,7 +241,7 @@ public class Main extends JavaPlugin implements Listener {
                 p.openInventory(Main.chestsMap.get(p.getUniqueId()).get(settingsMap.get(p.getUniqueId()).getLastPage()));
                 openChests.put(p.getUniqueId(), p.getUniqueId());
             } else {
-                File f = new File(Main.plugin.getDataFolder() + File.separator + "playedata" + File.separator + args[0] + ".yml");
+                File f = new File(Main.plugin.getDataFolder() + File.separator + "playerdata" + File.separator + args[0] + ".yml");
                 if (f.exists()) {
                     UUID uuid = UUID.fromString(args[0]);
                     if (!Main.settingsMap.containsKey(uuid)) {
