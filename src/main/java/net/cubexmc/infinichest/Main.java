@@ -82,9 +82,11 @@ public class Main extends JavaPlugin implements Listener {
     public void quit(PlayerQuitEvent e) {
         Settings.save(settingsMap.get(e.getPlayer().getUniqueId()));
         settingsMap.remove(e.getPlayer().getUniqueId());
-        for (UUID uuid : openedOthers.get(e.getPlayer().getUniqueId())) {
-            Settings.save(settingsMap.get(uuid));
-            settingsMap.remove(uuid);
+        if (openedOthers.containsKey(e.getPlayer().getUniqueId())) {
+            for (UUID uuid : openedOthers.get(e.getPlayer().getUniqueId())) {
+                Settings.save(settingsMap.get(uuid));
+                settingsMap.remove(uuid);
+            }
         }
     }
 
