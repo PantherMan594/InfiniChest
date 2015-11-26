@@ -7,10 +7,7 @@ package net.cubexmc.infinichest;
 
 import net.cubexmc.infinichest.Utils.Chests;
 import net.cubexmc.infinichest.Utils.Settings;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.GameMode;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.block.Chest;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -335,13 +332,16 @@ public class Main extends JavaPlugin implements Listener {
     @EventHandler
     public void blockPlace(BlockPlaceEvent e) {
         ItemStack hand = e.getItemInHand();
-        if (hand.getType().equals(Material.CHEST) && hand.getItemMeta().getDisplayName().replaceAll("[^\\s\\w\\d:]", "").equals("6Chest Withdrawal") && hand.getItemMeta().getLore().contains(identifier.get(0))) {
+        if (!e.isCancelled() && e.canBuild() && hand.getType().equals(Material.CHEST) && hand.getItemMeta().getDisplayName().replaceAll("[^\\s\\w\\d:]", "").equals("6Chest Withdrawal") && hand.getItemMeta().getLore().contains(identifier.get(0))) {
+            e.setCancelled(true);
+            Location blockLoc = e.getBlock().getLocation();
+            e.getPlayer().getWorld().getBlockAt(blockLoc).setType(Material.CHEST);
             List<String> lore = hand.getItemMeta().getLore();
             UUID uuid = UUID.fromString(lore.get(1).substring(2));
-            Integer page = Integer.valueOf(lore.get(1).substring(2));
+            Integer page = Integer.valueOf(lore.get(2).substring(2));
             HashMap<Integer, Inventory> chests = chestsMap.get(uuid);
             Inventory chestInv = chests.get(page);
-            Chest chest = (Chest) e.getBlock().getState();
+            Chest chest = (Chest) e.getPlayer().getWorld().getBlockAt(blockLoc).getState();
             for (int i = 0; i < 45; i++) {
                 chest.getInventory().setItem(i, chestInv.getContents()[i]);
                 chestInv.clear(i);
