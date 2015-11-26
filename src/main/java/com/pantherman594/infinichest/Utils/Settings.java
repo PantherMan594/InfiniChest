@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2015 CubeXMC. All Rights Reserved.
+ * Copyright (c) 2015 David Shen. All Rights Reserved.
  * Created by PantherMan594.
  */
 
-package net.cubexmc.infinichest.Utils;
+package com.pantherman594.infinichest.Utils;
 
-import net.cubexmc.infinichest.Main;
+import com.pantherman594.infinichest.Main;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;

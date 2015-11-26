@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2015 CubeXMC. All Rights Reserved.
+ * Copyright (c) 2015 David Shen. All Rights Reserved.
  * Created by PantherMan594.
  */
 
-package net.cubexmc.infinichest;
+package com.pantherman594.infinichest;
 
-import net.cubexmc.infinichest.Utils.Chests;
-import net.cubexmc.infinichest.Utils.Settings;
+import com.pantherman594.infinichest.Utils.Chests;
+import com.pantherman594.infinichest.Utils.Settings;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;

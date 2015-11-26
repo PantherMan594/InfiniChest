@@ -1,6 +1,6 @@
 name: InfiniChest
-main: net.cubexmc.infinichest.Main
-description: Extremely large storage chest. By PantherMan594. (c) CubeXMC Network.
+main: com.pantherman594.Main
+description: Infinitely large storage chest. By PantherMan594. (c) PantherMan594.
 author: PantherMan594
 version: #VERSION#
 commands:
