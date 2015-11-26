@@ -22,8 +22,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.*;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
@@ -114,6 +113,14 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     @EventHandler
+    public void open(InventoryOpenEvent e) {
+        if (!e.isCancelled() && e.getInventory().getName().startsWith(ChatColor.BLACK + "h;")) {
+            e.getPlayer().sendMessage(ChatColor.RED + "Sorry you can't open an InfiniChest chest (there's nothing here anyways).");
+            e.setCancelled(true);
+        }
+    }
+
+    @EventHandler
     public void close(InventoryCloseEvent e) {
         Player p = (Player) e.getPlayer();
         if (openChests.containsKey(p.getUniqueId()) && e.getInventory().getName().contains("'s Chest p. ")) {
@@ -131,7 +138,7 @@ public class Main extends JavaPlugin implements Listener {
 
     @EventHandler
     public void interact(InventoryClickEvent e) {
-        if (!e.isCancelled() && e.getCurrentItem() != null && e.getCurrentItem().getItemMeta() != null && e.getCurrentItem().getItemMeta().getLore() != null && !e.getCurrentItem().getItemMeta().getLore().isEmpty() && e.getCurrentItem().getItemMeta().getLore().get(0).contains("*")) {
+        if (!e.isCancelled() && e.getCurrentItem() != null && e.getCurrentItem().getItemMeta() != null && e.getCurrentItem().getItemMeta().getLore() != null && !e.getCurrentItem().getItemMeta().getLore().isEmpty() && e.getCurrentItem().getItemMeta().getLore().contains(identifier.get(0))) {
             Player p = (Player) e.getWhoClicked();
             UUID owner = openChests.get(p.getUniqueId());
             if (e.getClickedInventory().getName().contains("'s Chest p. ")) {
@@ -143,17 +150,27 @@ public class Main extends JavaPlugin implements Listener {
                 ItemMeta meta;
                 switch (e.getCurrentItem().getItemMeta().getDisplayName().replaceAll("[^\\s\\w\\d:]", "")) {
                     case "alPrevious Page":
+                        ItemStack cursor = p.getItemOnCursor();
+                        p.setItemOnCursor(new ItemStack(Material.AIR));
                         chests = Main.chestsMap.get(p.getUniqueId());
                         chests.put(page, e.getClickedInventory());
                         chestsMap.put(p.getUniqueId(), chests);
                         p.openInventory(chestsMap.get(owner).get(page - 1));
+                        if (cursor != null) {
+                            p.setItemOnCursor(cursor);
+                        }
                         openChests.put(p.getUniqueId(), owner);
                         break;
                     case "alNext Page":
+                        ItemStack cursor2 = p.getItemOnCursor();
+                        p.setItemOnCursor(new ItemStack(Material.AIR));
                         chests = Main.chestsMap.get(p.getUniqueId());
                         chests.put(page, e.getClickedInventory());
                         chestsMap.put(p.getUniqueId(), chests);
                         p.openInventory(chestsMap.get(owner).get(page + 1));
+                        if (cursor2 != null) {
+                            p.setItemOnCursor(cursor2);
+                        }
                         openChests.put(p.getUniqueId(), owner);
                         break;
                     case "blAuto Pickup: Disabled":
@@ -189,7 +206,7 @@ public class Main extends JavaPlugin implements Listener {
                         settings.setAutoPickup(0);
                         settingsMap.put(owner, settings);
                         break;
-                    case "6lChest Withdrawal":
+                    case "6lChest":
                         if (p.getInventory().firstEmpty() >= 0) {
                             if (p.getInventory().contains(Material.CHEST)) {
                                 for (int i = 0; i < 36; i++) {
@@ -199,11 +216,17 @@ public class Main extends JavaPlugin implements Listener {
                                         p.getInventory().setItem(i, stack);
                                         ItemStack cStack = new ItemStack(Material.CHEST, 1);
                                         ItemMeta cMeta = cStack.getItemMeta();
-                                        cMeta.setDisplayName(ChatColor.GOLD + "Chest Withdrawal");
                                         List<String> lore = new ArrayList<>();
-                                        lore.add(ChatColor.BLUE + "Place me and open!");
-                                        lore.add(ChatColor.BLACK + owner.toString());
-                                        lore.add(ChatColor.BLACK + page.toString());
+                                        if (e.getClick().equals(ClickType.LEFT) || e.getClick().equals(ClickType.RIGHT)) {
+                                            lore.add(ChatColor.GOLD + "Chest Withdrawal");
+                                            lore.add(ChatColor.BLUE + "Place me and open!");
+                                            lore.add(ChatColor.BLACK + owner.toString());
+                                            lore.add(ChatColor.BLACK + page.toString());
+                                        } else if (e.getClick().equals(ClickType.SHIFT_LEFT) || e.getClick().equals(ClickType.SHIFT_RIGHT)) {
+                                            cMeta.setDisplayName(ChatColor.BLACK + "h;" + owner.toString());
+                                            lore.add(ChatColor.GOLD + "Hopper Chest");
+                                            lore.add(ChatColor.BLUE + "Place me and attach a hopper!");
+                                        }
                                         lore.addAll(identifier);
                                         cMeta.setLore(lore);
                                         cStack.setItemMeta(cMeta);
@@ -223,32 +246,32 @@ public class Main extends JavaPlugin implements Listener {
                         chests.put(page, e.getClickedInventory());
                         chestsMap.put(p.getUniqueId(), chests);
                         Inventory trash = trashMap.get(p.getUniqueId());
-                        ItemStack cursor = p.getItemOnCursor();
-                        if (cursor.getAmount() != 0) {
+                        ItemStack cursor3 = p.getItemOnCursor();
+                        if (cursor3.getAmount() != 0) {
                             boolean done = false;
                             for (int j = 0; j < 54 && !done; j++) {
                                 ItemStack trashItem = trash.getItem(j);
                                 if (trashItem == null || trashItem.getType() == Material.AIR) {
                                     trash.setItem(j, p.getItemOnCursor());
                                     trashMap.put(p.getUniqueId(), trash);
-                                    cursor.setAmount(0);
+                                    cursor3.setAmount(0);
                                     done = true;
-                                } else if (trashItem != null && trashItem.isSimilar(cursor)) {
-                                    int amt = trashItem.getAmount() + cursor.getAmount();
+                                } else if (trashItem != null && trashItem.isSimilar(cursor3)) {
+                                    int amt = trashItem.getAmount() + cursor3.getAmount();
                                     int max = trashItem.getMaxStackSize();
                                     if (amt > max) {
                                         trashItem.setAmount(max);
-                                        cursor.setAmount(amt - max);
+                                        cursor3.setAmount(amt - max);
                                     } else {
                                         trashItem.setAmount(amt);
                                         trash.setItem(j, trashItem);
                                         trashMap.put(p.getUniqueId(), trash);
-                                        cursor.setAmount(0);
+                                        cursor3.setAmount(0);
                                         done = true;
                                     }
                                 }
                             }
-                            p.setItemOnCursor(cursor);
+                            p.setItemOnCursor(cursor3);
                         } else {
                             p.openInventory(trash);
                             openChests.put(p.getUniqueId(), owner);
@@ -335,10 +358,10 @@ public class Main extends JavaPlugin implements Listener {
     @EventHandler
     public void blockPlace(BlockPlaceEvent e) {
         ItemStack hand = e.getItemInHand();
-        if (!e.isCancelled() && e.canBuild() && hand.getType().equals(Material.CHEST) && hand.getItemMeta().getDisplayName().replaceAll("[^\\s\\w\\d:]", "").equals("6Chest Withdrawal") && hand.getItemMeta().getLore().contains(identifier.get(0))) {
+        if (!e.isCancelled() && e.canBuild() && hand.getType().equals(Material.CHEST) && !hand.getItemMeta().getLore().isEmpty() && hand.getItemMeta().getLore().contains(identifier.get(0)) && hand.getItemMeta().getLore().contains(ChatColor.GOLD + "Chest Withdrawal")) {
             List<String> lore = hand.getItemMeta().getLore();
-            UUID uuid = UUID.fromString(lore.get(1).substring(2));
-            Integer page = Integer.valueOf(lore.get(2).substring(2));
+            UUID uuid = UUID.fromString(lore.get(2).substring(2));
+            Integer page = Integer.valueOf(lore.get(3).substring(2));
             HashMap<Integer, Inventory> chests = chestsMap.get(uuid);
             Inventory chestInv = chests.get(page);
             Chest chest = (Chest) e.getBlock().getState();
@@ -350,6 +373,25 @@ public class Main extends JavaPlugin implements Listener {
                     }
                 }
             }
+        }
+    }
+
+    @EventHandler
+    public void hopperTransfer(InventoryMoveItemEvent e) {
+        if (!e.isCancelled() && e.getDestination().getName().startsWith(ChatColor.BLACK + "h;")) {
+            Chests.addItem(UUID.fromString(e.getDestination().getName().split(";")[1]), e.getItem());
+            final Inventory inv = e.getDestination();
+            Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
+                @Override
+                public void run() {
+                    while (true) {
+                        if (inv.firstEmpty() != 0) {
+                            inv.clear();
+                            break;
+                        }
+                    }
+                }
+            });
         }
     }
 

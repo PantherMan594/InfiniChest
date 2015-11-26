@@ -107,7 +107,9 @@ public class Chests {
                 } else if (j == 50) {
                     item = new ItemStack(Material.CHEST, 1);
                     meta = item.getItemMeta();
-                    meta.setDisplayName("" + ChatColor.GOLD + ChatColor.BOLD + "Chest Withdrawal");
+                    meta.setDisplayName("" + ChatColor.GOLD + ChatColor.BOLD + "Chest");
+                    lore.add(ChatColor.BLUE + "Click to withdraw chest");
+                    lore.add(ChatColor.BLUE + "Shift click to get hopper transfer block");
                 } else if (j > 50) {
                     if (i <= Main.settingsMap.get(uuid).getMax()) {
                         item = new ItemStack(Material.STAINED_GLASS_PANE, 1, DyeColor.LIME.getData());
