@@ -67,9 +67,11 @@ public class Main extends JavaPlugin implements Listener {
         for (Player p : Bukkit.getOnlinePlayers()) {
             Settings.save(settingsMap.get(p.getUniqueId()));
             settingsMap.remove(p.getUniqueId());
-            for (UUID uuid : openedOthers.get(p.getUniqueId())) {
-                Settings.save(settingsMap.get(uuid));
-                settingsMap.remove(uuid);
+            if (openedOthers.containsKey(p.getUniqueId())) {
+                for (UUID uuid : openedOthers.get(p.getUniqueId())) {
+                    Settings.save(settingsMap.get(uuid));
+                    settingsMap.remove(uuid);
+                }
             }
         }
     }
@@ -204,6 +206,8 @@ public class Main extends JavaPlugin implements Listener {
                                         lore.add(ChatColor.BLACK + page.toString());
                                         lore.addAll(identifier);
                                         cMeta.setLore(lore);
+                                        cStack.setItemMeta(cMeta);
+                                        p.getInventory().setItem(p.getInventory().firstEmpty(), cStack);
                                         i = 36;
                                     }
                                 }
