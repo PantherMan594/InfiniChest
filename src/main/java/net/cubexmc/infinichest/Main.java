@@ -333,7 +333,7 @@ public class Main extends JavaPlugin implements Listener {
     public void blockPlace(BlockPlaceEvent e) {
         ItemStack hand = e.getItemInHand();
         if (!e.isCancelled() && e.canBuild() && hand.getType().equals(Material.CHEST) && hand.getItemMeta().getDisplayName().replaceAll("[^\\s\\w\\d:]", "").equals("6Chest Withdrawal") && hand.getItemMeta().getLore().contains(identifier.get(0))) {
-            e.setCancelled(true);
+            e.getBlock().setType(Material.AIR);
             List<String> lore = hand.getItemMeta().getLore();
             Location blockLoc = e.getBlock().getLocation();
             e.getPlayer().getWorld().getBlockAt(blockLoc).setType(Material.CHEST);
@@ -346,7 +346,6 @@ public class Main extends JavaPlugin implements Listener {
                 chest.getInventory().setItem(i, chestInv.getContents()[i]);
                 chestInv.clear(i);
             }
-            hand.setAmount(e.getItemInHand().getAmount() - 1);
         }
     }
 
