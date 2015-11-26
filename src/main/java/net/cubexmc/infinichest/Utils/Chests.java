@@ -10,12 +10,13 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.DyeColor;
 import org.bukkit.Material;
-import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -25,9 +26,9 @@ import java.util.UUID;
  */
 public class Chests {
 
-    public static boolean addItem(Player p, ItemStack stack) {
-        HashMap<Integer, Inventory> chests = Main.chestsMap.get(p.getUniqueId());
-        for (int i = 1; i < Main.settingsMap.get(p.getUniqueId()).getMax(); i++) {
+    public static boolean addItem(UUID uuid, ItemStack stack) {
+        HashMap<Integer, Inventory> chests = Main.chestsMap.get(uuid);
+        for (int i = 1; i < Main.settingsMap.get(uuid).getMax(); i++) {
             Inventory chest = chests.get(i);
             if (chest != null) {
                 for (int j = 0; j < 54; j++) {
@@ -35,7 +36,7 @@ public class Chests {
                     if (item == null || item.getType() == Material.AIR) {
                         chest.setItem(j, stack);
                         chests.put(i, chest);
-                        Main.chestsMap.put(p.getUniqueId(), chests);
+                        Main.chestsMap.put(uuid, chests);
                         return true;
                     } else if (item != null && item.isSimilar(stack)) {
                         int amt = item.getAmount() + stack.getAmount();
@@ -47,7 +48,7 @@ public class Chests {
                             item.setAmount(amt);
                             chest.setItem(j, item);
                             chests.put(i, chest);
-                            Main.chestsMap.put(p.getUniqueId(), chests);
+                            Main.chestsMap.put(uuid, chests);
                             return true;
                         }
                     }
@@ -74,6 +75,7 @@ public class Chests {
             for (int j = 45; j < 54; j++) {
                 ItemStack item = null;
                 ItemMeta meta = null;
+                List<String> lore = new ArrayList<>();
                 if (j < 48) {
                     if (i > 1) {
                         item = new ItemStack(Material.STAINED_GLASS_PANE, 1, DyeColor.LIME.getData());
@@ -84,16 +86,10 @@ public class Chests {
                         meta = item.getItemMeta();
                         meta.setDisplayName("" + ChatColor.RED + ChatColor.BOLD + "No Previous Page");
                     }
-                } else if (j > 50) {
-                    if (i <= Main.settingsMap.get(uuid).getMax()) {
-                        item = new ItemStack(Material.STAINED_GLASS_PANE, 1, DyeColor.LIME.getData());
-                        meta = item.getItemMeta();
-                        meta.setDisplayName("" + ChatColor.GREEN + ChatColor.BOLD + "Next Page");
-                    } else {
-                        item = new ItemStack(Material.STAINED_GLASS_PANE, 1, DyeColor.RED.getData());
-                        meta = item.getItemMeta();
-                        meta.setDisplayName("" + ChatColor.RED + ChatColor.BOLD + "No Next Page");
-                    }
+                } else if (j == 48) {
+                    item = new ItemStack(Material.BARRIER, 1);
+                    meta = item.getItemMeta();
+                    meta.setDisplayName("" + ChatColor.RED + ChatColor.BOLD + "TRASH");
                 } else if (j == 49) {
                     item = new ItemStack(Material.HOPPER, 1);
                     meta = item.getItemMeta();
@@ -108,13 +104,24 @@ public class Chests {
                             meta.setDisplayName("" + ChatColor.AQUA + ChatColor.BOLD + "Auto Pickup: On Full Inventory");
                             break;
                     }
-                } else if (j == 48 || j == 50) {
-                    item = new ItemStack(Material.BARRIER, 1);
+                } else if (j == 50) {
+                    item = new ItemStack(Material.CHEST, 1);
                     meta = item.getItemMeta();
-                    meta.setDisplayName("" + ChatColor.RED + ChatColor.BOLD + "TRASH");
+                    meta.setDisplayName("" + ChatColor.GOLD + ChatColor.BOLD + "Chest Withdrawal");
+                } else if (j > 50) {
+                    if (i <= Main.settingsMap.get(uuid).getMax()) {
+                        item = new ItemStack(Material.STAINED_GLASS_PANE, 1, DyeColor.LIME.getData());
+                        meta = item.getItemMeta();
+                        meta.setDisplayName("" + ChatColor.GREEN + ChatColor.BOLD + "Next Page");
+                    } else {
+                        item = new ItemStack(Material.STAINED_GLASS_PANE, 1, DyeColor.RED.getData());
+                        meta = item.getItemMeta();
+                        meta.setDisplayName("" + ChatColor.RED + ChatColor.BOLD + "No Next Page");
+                    }
                 }
                 if (meta != null) {
-                    meta.setLore(Main.identifier);
+                    lore.addAll(Main.identifier);
+                    meta.setLore(lore);
                 }
                 item.setItemMeta(meta);
                 chest.setItem(j, item);

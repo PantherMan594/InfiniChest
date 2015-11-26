@@ -11,6 +11,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.block.Chest;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.enchantments.Enchantment;
@@ -20,6 +21,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -33,7 +35,10 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * Created by David on 10/03.
@@ -47,8 +52,8 @@ public class Main extends JavaPlugin implements Listener {
     public static HashMap<UUID, Inventory> trashMap = new HashMap<>();
     public static HashMap<UUID, UUID> openChests = new HashMap<>();
     public static HashMap<UUID, ArrayList<UUID>> openedOthers = new HashMap<>();
-    public static List<String> identifier = new ArrayList<>();
     public static HashMap<UUID, ItemStack> tempItem = new HashMap<>();
+    public static List<String> identifier = new ArrayList<>();
 
     @Override
     public void onEnable() {
@@ -124,7 +129,7 @@ public class Main extends JavaPlugin implements Listener {
 
     @EventHandler
     public void interact(InventoryClickEvent e) {
-        if (e.getCurrentItem() != null && e.getCurrentItem().getItemMeta() != null && e.getCurrentItem().getItemMeta().getLore() != null && !e.getCurrentItem().getItemMeta().getLore().isEmpty() && e.getCurrentItem().getItemMeta().getLore().get(0).contains("*")) {
+        if (!e.isCancelled() && e.getCurrentItem() != null && e.getCurrentItem().getItemMeta() != null && e.getCurrentItem().getItemMeta().getLore() != null && !e.getCurrentItem().getItemMeta().getLore().isEmpty() && e.getCurrentItem().getItemMeta().getLore().get(0).contains("*")) {
             Player p = (Player) e.getWhoClicked();
             UUID owner = openChests.get(p.getUniqueId());
             if (e.getClickedInventory().getName().contains("'s Chest p. ")) {
@@ -181,6 +186,33 @@ public class Main extends JavaPlugin implements Listener {
                         settings = settingsMap.get(owner);
                         settings.setAutoPickup(0);
                         settingsMap.put(owner, settings);
+                        break;
+                    case "6lChest Withdrawal":
+                        if (p.getInventory().firstEmpty() >= 0) {
+                            if (p.getInventory().contains(new ItemStack(Material.CHEST))) {
+                                for (int i = 0; i < 36; i++) {
+                                    ItemStack stack = p.getInventory().getItem(i);
+                                    if (stack.getType().equals(Material.CHEST)) {
+                                        stack.setAmount(stack.getAmount() - 1);
+                                        p.getInventory().setItem(i, stack);
+                                        ItemStack cStack = new ItemStack(Material.CHEST, 1);
+                                        ItemMeta cMeta = cStack.getItemMeta();
+                                        cMeta.setDisplayName(ChatColor.GOLD + "Chest Withdrawal");
+                                        List<String> lore = new ArrayList<>();
+                                        lore.add(ChatColor.BLUE + "Place me and open!");
+                                        lore.add(ChatColor.BLACK + owner.toString());
+                                        lore.add(ChatColor.BLACK + page.toString());
+                                        lore.addAll(identifier);
+                                        cMeta.setLore(lore);
+                                        i = 36;
+                                    }
+                                }
+                            } else {
+                                p.sendMessage(ChatColor.RED + "Error: Make sure you have a chest in your inventory first!");
+                            }
+                        } else {
+                            p.sendMessage(ChatColor.RED + "Error: Please have an open spot in your inventory to withdraw a chest.");
+                        }
                         break;
                     case "clTRASH":
                         chests = Main.chestsMap.get(p.getUniqueId());
@@ -278,22 +310,37 @@ public class Main extends JavaPlugin implements Listener {
     public void blockBreak(BlockBreakEvent e) {
         Player p = e.getPlayer();
         if (settingsMap.get(p.getUniqueId()).getAutoPickup() > 0 && !e.isCancelled()) {
-            Iterator drops = e.getBlock().getDrops().iterator();
-            while (drops.hasNext()) {
-                ItemStack stack = (ItemStack) drops.next();
+            for (ItemStack stack : e.getBlock().getDrops()) {
                 int amount = (int) (Math.random() * (double) p.getItemInHand().getEnchantmentLevel(Enchantment.LOOT_BONUS_BLOCKS));
                 if (amount > 1 & !stack.getType().isBlock()) {
                     stack.setAmount(amount);
                 }
                 if (settingsMap.get(p.getUniqueId()).getAutoPickup() == 1) {
-                    if (e.getPlayer().getGameMode() != GameMode.CREATIVE && Chests.addItem(p, stack)) {
+                    if (e.getPlayer().getGameMode() != GameMode.CREATIVE && Chests.addItem(p.getUniqueId(), stack)) {
                         e.getBlock().setType(Material.AIR);
                     }
                 } else if (settingsMap.get(p.getUniqueId()).getAutoPickup() == 2 && addItemInventory(p, stack) > 0) {
-                    if (e.getPlayer().getGameMode() != GameMode.CREATIVE && Chests.addItem(p, stack)) {
+                    if (e.getPlayer().getGameMode() != GameMode.CREATIVE && Chests.addItem(p.getUniqueId(), stack)) {
                         e.getBlock().setType(Material.AIR);
                     }
                 }
+            }
+        }
+    }
+
+    @EventHandler
+    public void blockPlace(BlockPlaceEvent e) {
+        ItemStack hand = e.getItemInHand();
+        if (hand.getType().equals(Material.CHEST) && hand.getItemMeta().getDisplayName().replaceAll("[^\\s\\w\\d:]", "").equals("6Chest Withdrawal") && hand.getItemMeta().getLore().contains(identifier.get(0))) {
+            List<String> lore = hand.getItemMeta().getLore();
+            UUID uuid = UUID.fromString(lore.get(0));
+            Integer page = Integer.valueOf(lore.get(1));
+            HashMap<Integer, Inventory> chests = chestsMap.get(uuid);
+            Inventory chestInv = chests.get(page);
+            Chest chest = (Chest) e.getBlock().getState();
+            for (int i = 0; i < 45; i++) {
+                chest.getInventory().setItem(i, chestInv.getContents()[i]);
+                chestInv.clear(i);
             }
         }
     }
@@ -304,13 +351,13 @@ public class Main extends JavaPlugin implements Listener {
         if (settingsMap.get(p.getUniqueId()).getAutoPickup() > 0 && !e.isCancelled()) {
             ItemStack stack = e.getItem().getItemStack();
             if (settingsMap.get(p.getUniqueId()).getAutoPickup() == 1) {
-                Chests.addItem(p, stack);
+                Chests.addItem(p.getUniqueId(), stack);
                 e.getItem().remove();
                 e.setCancelled(true);
             } else if (settingsMap.get(p.getUniqueId()).getAutoPickup() == 2) {
                 stack.setAmount(addItemInventory(p, stack));
                 if (stack.getAmount() > 0) {
-                    Chests.addItem(p, stack);
+                    Chests.addItem(p.getUniqueId(), stack);
                     e.getItem().remove();
                     e.setCancelled(true);
                 }
