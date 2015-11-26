@@ -1,5 +1,5 @@
 name: InfiniChest
-main: com.pantherman594.Main
+main: com.pantherman594.infinichest.Main
 description: Infinitely large storage chest. By PantherMan594. (c) PantherMan594.
 author: PantherMan594
 version: #VERSION#
