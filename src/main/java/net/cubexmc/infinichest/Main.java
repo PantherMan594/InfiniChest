@@ -338,7 +338,7 @@ public class Main extends JavaPlugin implements Listener {
         if (hand.getType().equals(Material.CHEST) && hand.getItemMeta().getDisplayName().replaceAll("[^\\s\\w\\d:]", "").equals("6Chest Withdrawal") && hand.getItemMeta().getLore().contains(identifier.get(0))) {
             List<String> lore = hand.getItemMeta().getLore();
             UUID uuid = UUID.fromString(lore.get(1).substring(2));
-            Integer page = Integer.valueOf(lore.get(1));
+            Integer page = Integer.valueOf(lore.get(1).substring(2));
             HashMap<Integer, Inventory> chests = chestsMap.get(uuid);
             Inventory chestInv = chests.get(page);
             Chest chest = (Chest) e.getBlock().getState();
