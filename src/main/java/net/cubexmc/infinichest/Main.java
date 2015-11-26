@@ -7,7 +7,10 @@ package net.cubexmc.infinichest;
 
 import net.cubexmc.infinichest.Utils.Chests;
 import net.cubexmc.infinichest.Utils.Settings;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
+import org.bukkit.Material;
 import org.bukkit.block.Chest;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -188,10 +191,10 @@ public class Main extends JavaPlugin implements Listener {
                         break;
                     case "6lChest Withdrawal":
                         if (p.getInventory().firstEmpty() >= 0) {
-                            if (p.getInventory().contains(new ItemStack(Material.CHEST))) {
+                            if (p.getInventory().contains(Material.CHEST)) {
                                 for (int i = 0; i < 36; i++) {
                                     ItemStack stack = p.getInventory().getItem(i);
-                                    if (stack.getType().equals(Material.CHEST)) {
+                                    if (stack != null && stack.getType().equals(Material.CHEST)) {
                                         stack.setAmount(stack.getAmount() - 1);
                                         p.getInventory().setItem(i, stack);
                                         ItemStack cStack = new ItemStack(Material.CHEST, 1);
@@ -333,18 +336,19 @@ public class Main extends JavaPlugin implements Listener {
     public void blockPlace(BlockPlaceEvent e) {
         ItemStack hand = e.getItemInHand();
         if (!e.isCancelled() && e.canBuild() && hand.getType().equals(Material.CHEST) && hand.getItemMeta().getDisplayName().replaceAll("[^\\s\\w\\d:]", "").equals("6Chest Withdrawal") && hand.getItemMeta().getLore().contains(identifier.get(0))) {
-            e.getBlock().setType(Material.AIR);
             List<String> lore = hand.getItemMeta().getLore();
-            Location blockLoc = e.getBlock().getLocation();
-            e.getPlayer().getWorld().getBlockAt(blockLoc).setType(Material.CHEST);
             UUID uuid = UUID.fromString(lore.get(1).substring(2));
             Integer page = Integer.valueOf(lore.get(2).substring(2));
             HashMap<Integer, Inventory> chests = chestsMap.get(uuid);
             Inventory chestInv = chests.get(page);
-            Chest chest = (Chest) e.getPlayer().getWorld().getBlockAt(blockLoc).getState();
-            for (int i = 0; i < 27; i++) {
-                chest.getInventory().setItem(i, chestInv.getContents()[i]);
-                chestInv.clear(i);
+            Chest chest = (Chest) e.getBlock().getState();
+            for (int i = 0; i < 45; i++) {
+                if (chest.getInventory().firstEmpty() >= 0) {
+                    if (chestInv.getContents()[i] != null) {
+                        chest.getInventory().setItem(chest.getInventory().firstEmpty(), chestInv.getContents()[i]);
+                        chestInv.clear(i);
+                    }
+                }
             }
         }
     }
