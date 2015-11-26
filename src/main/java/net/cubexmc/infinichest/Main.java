@@ -59,6 +59,12 @@ public class Main extends JavaPlugin implements Listener {
         plugin = this;
         identifier.add(ChatColor.BLACK + "*");
         Bukkit.getServer().getPluginManager().registerEvents(this, this);
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (!settingsMap.containsKey(p.getUniqueId())) {
+                settingsMap.put(p.getUniqueId(), Settings.load(p.getUniqueId()));
+                Chests.formatChests(p.getUniqueId(), p.getName());
+            }
+        }
     }
 
     @Override
