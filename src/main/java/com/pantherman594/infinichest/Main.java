@@ -7,10 +7,7 @@ package com.pantherman594.infinichest;
 
 import com.pantherman594.infinichest.Utils.Chests;
 import com.pantherman594.infinichest.Utils.Settings;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.GameMode;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.block.Chest;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -312,25 +309,38 @@ public class Main extends JavaPlugin implements Listener {
                 p.openInventory(Main.chestsMap.get(p.getUniqueId()).get(settingsMap.get(p.getUniqueId()).getLastPage()));
                 openChests.put(p.getUniqueId(), p.getUniqueId());
             } else {
-                File f = new File(Main.plugin.getDataFolder() + File.separator + "playerdata" + File.separator + args[0] + ".yml");
-                if (f.exists()) {
-                    UUID uuid = UUID.fromString(args[0]);
-                    if (!Main.settingsMap.containsKey(uuid)) {
-                        Main.settingsMap.put(uuid, Settings.load(uuid));
-                        Chests.formatChests(uuid, settingsMap.get(uuid).getName());
+                if (p.hasPermission("InfiniChest.others")) {
+                    boolean found = false;
+                    String dir = new File(plugin.getDataFolder() + File.separator + "playerdata" + File.separator).getPath();
+                    if (new File(dir + args[0] + ".yml").exists()) {
+                        found = true;
+                    } else {
+                        for (OfflinePlayer op : Bukkit.getOfflinePlayers()) {
+                            if (args[0].equalsIgnoreCase(op.getName()) && new File(dir + op.getUniqueId().toString() + ".yml").exists()) {
+                                found = true;
+                                break;
+                            }
+                        }
                     }
-                    p.openInventory(Main.chestsMap.get(uuid).get(settingsMap.get(uuid).getLastPage()));
-                    openChests.put(p.getUniqueId(), uuid);
-                    ArrayList<UUID> list = new ArrayList<>();
-                    if (openedOthers.containsKey(p.getUniqueId())) {
-                        list = openedOthers.get(p.getUniqueId());
+                    if (found) {
+                        UUID uuid = UUID.fromString(args[0]);
+                        if (!Main.settingsMap.containsKey(uuid)) {
+                            Main.settingsMap.put(uuid, Settings.load(uuid));
+                            Chests.formatChests(uuid, settingsMap.get(uuid).getName());
+                        }
+                        p.openInventory(Main.chestsMap.get(uuid).get(settingsMap.get(uuid).getLastPage()));
+                        openChests.put(p.getUniqueId(), uuid);
+                        ArrayList<UUID> list = new ArrayList<>();
+                        if (openedOthers.containsKey(p.getUniqueId())) {
+                            list = openedOthers.get(p.getUniqueId());
+                        }
+                        if (!list.contains(uuid)) {
+                            list.add(uuid);
+                        }
+                        openedOthers.put(p.getUniqueId(), list);
+                    } else {
+                        p.sendMessage(ChatColor.RED + "Player not found. Format: /" + lbl + " [UUID|Name].");
                     }
-                    if (!list.contains(uuid)) {
-                        list.add(uuid);
-                    }
-                    openedOthers.put(p.getUniqueId(), list);
-                } else {
-                    p.sendMessage(ChatColor.RED + "UUID not found. Format: /" + lbl + " [UUID].");
                 }
             }
         } else {
