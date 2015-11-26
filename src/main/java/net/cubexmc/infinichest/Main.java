@@ -334,6 +334,7 @@ public class Main extends JavaPlugin implements Listener {
         ItemStack hand = e.getItemInHand();
         if (!e.isCancelled() && e.canBuild() && hand.getType().equals(Material.CHEST) && hand.getItemMeta().getDisplayName().replaceAll("[^\\s\\w\\d:]", "").equals("6Chest Withdrawal") && hand.getItemMeta().getLore().contains(identifier.get(0))) {
             e.setCancelled(true);
+            e.getItemInHand().setAmount(e.getItemInHand().getAmount() - 1);
             Location blockLoc = e.getBlock().getLocation();
             e.getPlayer().getWorld().getBlockAt(blockLoc).setType(Material.CHEST);
             List<String> lore = hand.getItemMeta().getLore();
@@ -342,7 +343,7 @@ public class Main extends JavaPlugin implements Listener {
             HashMap<Integer, Inventory> chests = chestsMap.get(uuid);
             Inventory chestInv = chests.get(page);
             Chest chest = (Chest) e.getPlayer().getWorld().getBlockAt(blockLoc).getState();
-            for (int i = 0; i < 45; i++) {
+            for (int i = 0; i < 27; i++) {
                 chest.getInventory().setItem(i, chestInv.getContents()[i]);
                 chestInv.clear(i);
             }
