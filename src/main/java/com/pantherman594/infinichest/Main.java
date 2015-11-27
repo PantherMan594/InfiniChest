@@ -15,6 +15,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Chest;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -45,6 +46,7 @@ import java.util.logging.Level;
  */
 public class Main extends JavaPlugin implements Listener {
     public static Plugin plugin;
+    public static FileConfiguration config;
     public static HashMap<UUID, Settings> settingsMap = new HashMap<>();
     public static HashMap<UUID, HashMap<Integer, Inventory>> chestsMap = new HashMap<>();
     public static HashMap<UUID, Inventory> trashMap = new HashMap<>();
@@ -53,9 +55,14 @@ public class Main extends JavaPlugin implements Listener {
     public static HashMap<UUID, ItemStack> tempItem = new HashMap<>();
     public static List<String> identifier = new ArrayList<>();
 
+    public static String color(String str) {
+        return ChatColor.translateAlternateColorCodes('&', str);
+    }
+
     @Override
     public void onEnable() {
         plugin = this;
+        config = this.getConfig();
         identifier.add(ChatColor.BLACK + "*");
         Bukkit.getServer().getPluginManager().registerEvents(this, this);
         for (Player p : Bukkit.getOnlinePlayers()) {
@@ -184,7 +191,7 @@ public class Main extends JavaPlugin implements Listener {
                         meta.setDisplayName("" + ChatColor.AQUA + ChatColor.BOLD + "Auto Pickup: All Items");
                         meta.setLore(identifier);
                         item.setItemMeta(meta);
-                        e.getClickedInventory().setItem(49, item);
+                        e.getClickedInventory().setItem(58, item);
                         settings = settingsMap.get(owner);
                         settings.setAutoPickup(1);
                         settingsMap.put(owner, settings);
@@ -195,7 +202,7 @@ public class Main extends JavaPlugin implements Listener {
                         meta.setDisplayName("" + ChatColor.AQUA + ChatColor.BOLD + "Auto Pickup: On Full Inventory");
                         meta.setLore(identifier);
                         item.setItemMeta(meta);
-                        e.getClickedInventory().setItem(49, item);
+                        e.getClickedInventory().setItem(58, item);
                         settings = settingsMap.get(owner);
                         settings.setAutoPickup(2);
                         settingsMap.put(owner, settings);
@@ -206,7 +213,7 @@ public class Main extends JavaPlugin implements Listener {
                         meta.setDisplayName("" + ChatColor.AQUA + ChatColor.BOLD + "Auto Pickup: Disabled");
                         meta.setLore(identifier);
                         item.setItemMeta(meta);
-                        e.getClickedInventory().setItem(49, item);
+                        e.getClickedInventory().setItem(58, item);
                         settings = settingsMap.get(owner);
                         settings.setAutoPickup(0);
                         settingsMap.put(owner, settings);
@@ -308,8 +315,12 @@ public class Main extends JavaPlugin implements Listener {
                     settingsMap.put(p.getUniqueId(), Settings.load(p.getUniqueId()));
                     Chests.formatChests(p.getUniqueId(), p.getName());
                 }
-                p.openInventory(chestsMap.get(p.getUniqueId()).get(settingsMap.get(p.getUniqueId()).getLastPage()));
-                openChests.put(p.getUniqueId(), p.getUniqueId());
+                if (settingsMap.get(p.getUniqueId()).getMax() != 0) {
+                    p.openInventory(chestsMap.get(p.getUniqueId()).get(settingsMap.get(p.getUniqueId()).getLastPage()));
+                    openChests.put(p.getUniqueId(), p.getUniqueId());
+                } else {
+                    p.sendMessage(ChatColor.RED + "Error: You do not have permission to use any chests!");
+                }
             } else {
                 if (p.hasPermission("InfiniChest.others")) {
                     UUID uuid = null;

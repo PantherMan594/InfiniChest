@@ -7,6 +7,7 @@ package com.pantherman594.infinichest.Utils;
 
 import com.pantherman594.infinichest.Main;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -57,7 +58,7 @@ public class Settings {
             settings.setName(con.getString("settings.lastname"));
             settings.setAutoPickup(con.getInt("settings.autopickup"));
             settings.setLastPage(con.getInt("settings.lastpage"));
-            for (int i = 1; i < 1001; i++) {
+            for (int i = 1; i < settings.getMax(); i++) {
                 List<?> itemList = con.getList("items." + i);
                 if (itemList != null && !itemList.isEmpty()) {
                     ItemStack[] inv = itemList.toArray(new ItemStack[itemList.size()]);
@@ -78,13 +79,17 @@ public class Settings {
         }
         con.set("settings.autopickup", settings.getAutoPickup());
         con.set("settings.lastpage", settings.getLastPage());
-        for (int i = 1; i < 1001; i++) {
+        for (int i = 1; i < settings.getMax(); i++) {
             if (Main.chestsMap.containsKey(settings.getUniqueId()) && Main.chestsMap.get(settings.getUniqueId()).containsKey(i)) {
                 ItemStack[] items = Main.chestsMap.get(settings.getUniqueId()).get(i).getContents();
                 boolean empty = true;
-                for (int j = 0; j < 45 && empty; j++) {
+                for (int j = 0; j < 63; j++) {
                     if (items[j] != null) {
-                        empty = false;
+                        if (!items[j].getType().equals(Material.CHEST) && items[j].getItemMeta().getLore() != null && items[j].getItemMeta().getLore().contains(Main.identifier.get(0))) {
+                            items[j] = null;
+                        } else {
+                            empty = false;
+                        }
                     }
                 }
                 if (!empty) {
@@ -166,7 +171,7 @@ public class Settings {
                 return this;
             }
         }
-        this.max = 1;
+        this.max = 0;
         return this;
     }
 

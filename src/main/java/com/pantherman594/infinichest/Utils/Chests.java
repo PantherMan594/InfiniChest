@@ -64,19 +64,20 @@ public class Chests {
     //27 28 29 30 31 32 33 34 35
     //36 37 38 39 40 41 42 43 44
     //45 46 47 48 49 50 51 52 53
+    //54 55 56 57 58 59 60 61 62
 
     public static void formatChests(UUID uuid, String name) {
         HashMap<Integer, Inventory> chests = new HashMap<>();
         for (int i = 1; i < 1001; i++) {
-            Inventory chest = Bukkit.createInventory(null, 54, name + "'s Chest p. " + i);
+            Inventory chest = Bukkit.createInventory(null, 63, Main.color(Main.config.getString("title").replace("[name]", name).replace("[page]", "" + i)));
             if (Main.settingsMap.get(uuid).getItems().containsKey(i)) {
                 chest.setContents(Main.settingsMap.get(uuid).getItems().get(i));
             }
-            for (int j = 45; j < 54; j++) {
+            for (int j = 54; j < 63; j++) {
                 ItemStack item = null;
                 ItemMeta meta = null;
                 List<String> lore = new ArrayList<>();
-                if (j < 48) {
+                if (j < 57) {
                     if (i > 1) {
                         item = new ItemStack(Material.STAINED_GLASS_PANE, 1, DyeColor.LIME.getData());
                         meta = item.getItemMeta();
@@ -86,11 +87,11 @@ public class Chests {
                         meta = item.getItemMeta();
                         meta.setDisplayName("" + ChatColor.RED + ChatColor.BOLD + "No Previous Page");
                     }
-                } else if (j == 48) {
+                } else if (j == 57) {
                     item = new ItemStack(Material.BARRIER, 1);
                     meta = item.getItemMeta();
                     meta.setDisplayName("" + ChatColor.RED + ChatColor.BOLD + "TRASH");
-                } else if (j == 49) {
+                } else if (j == 58) {
                     item = new ItemStack(Material.HOPPER, 1);
                     meta = item.getItemMeta();
                     switch (Main.settingsMap.get(uuid).getAutoPickup()) {
@@ -104,13 +105,13 @@ public class Chests {
                             meta.setDisplayName("" + ChatColor.AQUA + ChatColor.BOLD + "Auto Pickup: On Full Inventory");
                             break;
                     }
-                } else if (j == 50) {
-                    item = new ItemStack(Material.CHEST, 1);
+                } else if (j == 59) {
+                    item = new ItemStack(Material.TRAPPED_CHEST, 1);
                     meta = item.getItemMeta();
                     meta.setDisplayName("" + ChatColor.GOLD + ChatColor.BOLD + "Chest");
                     lore.add(ChatColor.BLUE + "Click to withdraw chest");
                     lore.add(ChatColor.BLUE + "Shift click to get hopper transfer block");
-                } else if (j > 50) {
+                } else if (j > 59) {
                     if (i < Main.settingsMap.get(uuid).getMax()) {
                         item = new ItemStack(Material.STAINED_GLASS_PANE, 1, DyeColor.LIME.getData());
                         meta = item.getItemMeta();
