@@ -247,10 +247,10 @@ public class Main extends JavaPlugin implements Listener {
                         }
                         break;
                     case "clTRASH":
-                        chests = chestsMap.get(p.getUniqueId());
+                        chests = chestsMap.get(owner);
                         chests.put(page, e.getClickedInventory());
-                        chestsMap.put(p.getUniqueId(), chests);
-                        Inventory trash = trashMap.get(p.getUniqueId());
+                        chestsMap.put(owner, chests);
+                        Inventory trash = trashMap.get(owner);
                         ItemStack cursor3 = p.getItemOnCursor();
                         if (cursor3.getAmount() != 0) {
                             boolean done = false;
@@ -279,7 +279,7 @@ public class Main extends JavaPlugin implements Listener {
                             p.setItemOnCursor(cursor3);
                         } else {
                             p.openInventory(trash);
-                            openChests.put(p.getUniqueId(), p.getUniqueId());
+                            openChests.put(p.getUniqueId(), owner);
                         }
                         break;
                 }
