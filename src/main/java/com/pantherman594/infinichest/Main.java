@@ -131,7 +131,7 @@ public class Main extends JavaPlugin implements Listener {
         if (openChests.containsKey(p.getUniqueId()) && e.getInventory().getName().contains("'s Chest p. ")) {
             Integer page = Integer.valueOf(e.getInventory().getName().replaceFirst("[\\S]+'s Chest p\\. ", ""));
             UUID openUuid = openChests.get(p.getUniqueId());
-            HashMap<Integer, Inventory> chests = Main.chestsMap.get(openUuid);
+            HashMap<Integer, Inventory> chests = chestsMap.get(openUuid);
             chests.put(page, e.getInventory());
             Settings settings = settingsMap.get(openUuid);
             settings.setLastPage(page);
@@ -157,9 +157,9 @@ public class Main extends JavaPlugin implements Listener {
                     case "alPrevious Page":
                         ItemStack cursor = p.getItemOnCursor();
                         p.setItemOnCursor(new ItemStack(Material.AIR));
-                        chests = Main.chestsMap.get(p.getUniqueId());
+                        chests = chestsMap.get(owner);
                         chests.put(page, e.getClickedInventory());
-                        chestsMap.put(p.getUniqueId(), chests);
+                        chestsMap.put(owner, chests);
                         p.openInventory(chestsMap.get(owner).get(page - 1));
                         if (cursor != null) {
                             p.setItemOnCursor(cursor);
@@ -169,9 +169,9 @@ public class Main extends JavaPlugin implements Listener {
                     case "alNext Page":
                         ItemStack cursor2 = p.getItemOnCursor();
                         p.setItemOnCursor(new ItemStack(Material.AIR));
-                        chests = Main.chestsMap.get(p.getUniqueId());
+                        chests = chestsMap.get(owner);
                         chests.put(page, e.getClickedInventory());
-                        chestsMap.put(p.getUniqueId(), chests);
+                        chestsMap.put(owner, chests);
                         p.openInventory(chestsMap.get(owner).get(page + 1));
                         if (cursor2 != null) {
                             p.setItemOnCursor(cursor2);
@@ -247,7 +247,7 @@ public class Main extends JavaPlugin implements Listener {
                         }
                         break;
                     case "clTRASH":
-                        chests = Main.chestsMap.get(p.getUniqueId());
+                        chests = chestsMap.get(p.getUniqueId());
                         chests.put(page, e.getClickedInventory());
                         chestsMap.put(p.getUniqueId(), chests);
                         Inventory trash = trashMap.get(p.getUniqueId());
@@ -279,7 +279,7 @@ public class Main extends JavaPlugin implements Listener {
                             p.setItemOnCursor(cursor3);
                         } else {
                             p.openInventory(trash);
-                            openChests.put(p.getUniqueId(), owner);
+                            openChests.put(p.getUniqueId(), p.getUniqueId());
                         }
                         break;
                 }
@@ -304,11 +304,11 @@ public class Main extends JavaPlugin implements Listener {
         if (se instanceof Player) {
             Player p = (Player) se;
             if (args.length == 0) {
-                if (!Main.settingsMap.containsKey(p.getUniqueId())) {
-                    Main.settingsMap.put(p.getUniqueId(), Settings.load(p.getUniqueId()));
+                if (!settingsMap.containsKey(p.getUniqueId())) {
+                    settingsMap.put(p.getUniqueId(), Settings.load(p.getUniqueId()));
                     Chests.formatChests(p.getUniqueId(), p.getName());
                 }
-                p.openInventory(Main.chestsMap.get(p.getUniqueId()).get(settingsMap.get(p.getUniqueId()).getLastPage()));
+                p.openInventory(chestsMap.get(p.getUniqueId()).get(settingsMap.get(p.getUniqueId()).getLastPage()));
                 openChests.put(p.getUniqueId(), p.getUniqueId());
             } else {
                 if (p.hasPermission("InfiniChest.others")) {
@@ -323,11 +323,11 @@ public class Main extends JavaPlugin implements Listener {
                         }
                     }
                     if (uuid != null) {
-                        if (!Main.settingsMap.containsKey(uuid)) {
-                            Main.settingsMap.put(uuid, Settings.load(uuid));
+                        if (!settingsMap.containsKey(uuid)) {
+                            settingsMap.put(uuid, Settings.load(uuid));
                             Chests.formatChests(uuid, settingsMap.get(uuid).getName());
                         }
-                        p.openInventory(Main.chestsMap.get(uuid).get(settingsMap.get(uuid).getLastPage()));
+                        p.openInventory(chestsMap.get(uuid).get(settingsMap.get(uuid).getLastPage()));
                         openChests.put(p.getUniqueId(), uuid);
                         ArrayList<UUID> list = new ArrayList<>();
                         if (openedOthers.containsKey(p.getUniqueId())) {
