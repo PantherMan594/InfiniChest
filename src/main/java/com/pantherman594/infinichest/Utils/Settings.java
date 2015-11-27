@@ -71,7 +71,7 @@ public class Settings {
     public static void save(Settings settings) {
         File f = new File(Main.plugin.getDataFolder() + File.separator + "playerdata" + File.separator + settings.getUniqueId() + ".yml");
         FileConfiguration con = YamlConfiguration.loadConfiguration(f);
-        if (Bukkit.getPlayer(settings.getUniqueId()).getName() != null) {
+        if (Bukkit.getPlayer(settings.getUniqueId()) != null) {
             con.set("settings.lastname", Bukkit.getPlayer(settings.getUniqueId()).getName());
         } else {
             con.set("settings.lastname", settings.getName());
