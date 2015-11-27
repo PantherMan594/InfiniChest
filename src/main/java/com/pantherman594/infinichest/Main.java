@@ -258,7 +258,7 @@ public class Main extends JavaPlugin implements Listener {
                                 ItemStack trashItem = trash.getItem(j);
                                 if (trashItem == null || trashItem.getType() == Material.AIR) {
                                     trash.setItem(j, p.getItemOnCursor());
-                                    trashMap.put(p.getUniqueId(), trash);
+                                    trashMap.put(owner, trash);
                                     cursor3.setAmount(0);
                                     done = true;
                                 } else if (trashItem != null && trashItem.isSimilar(cursor3)) {
@@ -270,7 +270,7 @@ public class Main extends JavaPlugin implements Listener {
                                     } else {
                                         trashItem.setAmount(amt);
                                         trash.setItem(j, trashItem);
-                                        trashMap.put(p.getUniqueId(), trash);
+                                        trashMap.put(owner, trash);
                                         cursor3.setAmount(0);
                                         done = true;
                                     }
