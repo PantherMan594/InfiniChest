@@ -111,7 +111,7 @@ public class Chests {
                     lore.add(ChatColor.BLUE + "Click to withdraw chest");
                     lore.add(ChatColor.BLUE + "Shift click to get hopper transfer block");
                 } else if (j > 50) {
-                    if (i <= Main.settingsMap.get(uuid).getMax()) {
+                    if (i < Main.settingsMap.get(uuid).getMax()) {
                         item = new ItemStack(Material.STAINED_GLASS_PANE, 1, DyeColor.LIME.getData());
                         meta = item.getItemMeta();
                         meta.setDisplayName("" + ChatColor.GREEN + ChatColor.BOLD + "Next Page");

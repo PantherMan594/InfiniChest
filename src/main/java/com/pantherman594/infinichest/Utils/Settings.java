@@ -162,7 +162,7 @@ public class Settings {
         for (int i = 0; i < 1000; i++) {
             int j = 1000 - i;
             if (p.hasPermission("InfiniChest.size." + j)) {
-                this.max = j + 1;
+                this.max = j;
                 return this;
             }
         }
