@@ -5,9 +5,13 @@
 
 package com.pantherman594.infinichest;
 
+import com.evilmidget38.UUIDFetcher;
 import com.pantherman594.infinichest.Utils.Chests;
 import com.pantherman594.infinichest.Utils.Settings;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
+import org.bukkit.Material;
 import org.bukkit.block.Chest;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -31,10 +35,8 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.logging.Level;
 
 /**
  * Created by David on 10/03.
@@ -310,20 +312,17 @@ public class Main extends JavaPlugin implements Listener {
                 openChests.put(p.getUniqueId(), p.getUniqueId());
             } else {
                 if (p.hasPermission("InfiniChest.others")) {
-                    boolean found = false;
-                    String dir = new File(plugin.getDataFolder() + File.separator + "playerdata" + File.separator).getPath();
+                    UUID uuid = null;
+                    String dir = plugin.getDataFolder() + File.separator + "playerdata" + File.separator;
                     if (new File(dir + args[0] + ".yml").exists()) {
-                        found = true;
+                        uuid = UUID.fromString(args[0]);
                     } else {
-                        for (OfflinePlayer op : Bukkit.getOfflinePlayers()) {
-                            if (args[0].equalsIgnoreCase(op.getName()) && new File(dir + op.getUniqueId().toString() + ".yml").exists()) {
-                                found = true;
-                                break;
-                            }
+                        UUID uuidTemp = nameToUUID(args[0]);
+                        if (uuidTemp != null && new File(dir + uuidTemp.toString() + ".yml").exists()) {
+                            uuid = uuidTemp;
                         }
                     }
-                    if (found) {
-                        UUID uuid = UUID.fromString(args[0]);
+                    if (uuid != null) {
                         if (!Main.settingsMap.containsKey(uuid)) {
                             Main.settingsMap.put(uuid, Settings.load(uuid));
                             Chests.formatChests(uuid, settingsMap.get(uuid).getName());
@@ -339,7 +338,7 @@ public class Main extends JavaPlugin implements Listener {
                         }
                         openedOthers.put(p.getUniqueId(), list);
                     } else {
-                        p.sendMessage(ChatColor.RED + "Player not found. Format: /" + lbl + " [UUID|Name].");
+                        p.sendMessage(ChatColor.RED + "Player not found. Usage: /" + lbl + " [UUID|Name].");
                     }
                 }
             }
@@ -459,5 +458,40 @@ public class Main extends JavaPlugin implements Listener {
             return stack.getAmount();
         }
         return 0;
+    }
+
+    public UUID nameToUUID(String name) {
+        UUID id = null;
+        if (name == null) {
+            return id;
+        } else {
+            for (Player p : Bukkit.getServer().getOnlinePlayers()) {
+                if (p.getName().equalsIgnoreCase(name)) {
+                    id = p.getUniqueId();
+                    break;
+                }
+            }
+            if (id == null && Bukkit.getServer().getOnlineMode()) {
+                UUIDFetcher fetcher = new UUIDFetcher(Arrays.asList(name));
+                try {
+                    Map e1 = fetcher.call();
+                    Iterator iter = e1.entrySet().iterator();
+
+                    while (iter.hasNext()) {
+                        Map.Entry entry = (Map.Entry) iter.next();
+                        if (name.equalsIgnoreCase((String) entry.getKey())) {
+                            id = (UUID) entry.getValue();
+                            break;
+                        }
+                    }
+                } catch (Exception e) {
+                    this.getLogger().log(Level.SEVERE, "Exception on online UUID fetch", e);
+                }
+            } else if (id == null && !Bukkit.getServer().getOnlineMode()) {
+                id = Bukkit.getServer().getOfflinePlayer(name).getUniqueId();
+            }
+
+            return id;
+        }
     }
 }
