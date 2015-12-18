@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.pantherman594</groupId>
     <artifactId>infinichest</artifactId>
-    <version>1.0</version>
+    <version>1.1</version>
     <name>InfiniChest</name>
     <description>Infinitely large storage chest. By PantherMan594. (c) PantherMan594.</description>
     <properties>

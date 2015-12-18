@@ -47,6 +47,9 @@ import java.util.logging.Level;
 public class Main extends JavaPlugin implements Listener {
     public static Plugin plugin;
     public static FileConfiguration config;
+    public static String format;
+    public static String formatStripped;
+    public static String formatStrippedRegEx;
     public static HashMap<UUID, Settings> settingsMap = new HashMap<>();
     public static HashMap<UUID, HashMap<Integer, Inventory>> chestsMap = new HashMap<>();
     public static HashMap<UUID, Inventory> trashMap = new HashMap<>();
@@ -61,14 +64,23 @@ public class Main extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+        this.saveDefaultConfig();
         plugin = this;
         config = this.getConfig();
+        format = config.getString("title");
+        formatStripped = format.replace("[name]", "").replace("[page]", "").replace("&", "§");
+        if (formatStripped.length() > 28) {
+            format = "[name]'s Chest p. [page]";
+            formatStripped = "'s Chest p. ";
+            getLogger().warning("Chest title too long, chest titles can be a maximum of 32 characters (including colors, names, and page numbers).");
+        }
+        formatStrippedRegEx = formatStripped.replace("\\", "\\\\").replace(".", "\\.").replace("(", "\\(").replace(")", "\\)").replace("?", "\\?");
         identifier.add(ChatColor.BLACK + "*");
         Bukkit.getServer().getPluginManager().registerEvents(this, this);
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (!settingsMap.containsKey(p.getUniqueId())) {
                 settingsMap.put(p.getUniqueId(), Settings.load(p.getUniqueId()));
-                Chests.formatChests(p.getUniqueId(), p.getName());
+                Chests.formatChests(p.getUniqueId(), p.getName(), settingsMap.get(p.getUniqueId()).getLastPage());
             }
         }
     }
@@ -92,7 +104,7 @@ public class Main extends JavaPlugin implements Listener {
         Player p = e.getPlayer();
         if (!settingsMap.containsKey(p.getUniqueId())) {
             settingsMap.put(p.getUniqueId(), Settings.load(p.getUniqueId()));
-            Chests.formatChests(p.getUniqueId(), p.getName());
+            Chests.formatChests(p.getUniqueId(), p.getName(), settingsMap.get(p.getUniqueId()).getLastPage());
         }
     }
 
@@ -135,8 +147,8 @@ public class Main extends JavaPlugin implements Listener {
     @EventHandler
     public void close(InventoryCloseEvent e) {
         Player p = (Player) e.getPlayer();
-        if (openChests.containsKey(p.getUniqueId()) && e.getInventory().getName().contains("'s Chest p. ")) {
-            Integer page = Integer.valueOf(e.getInventory().getName().replaceFirst("[\\S]+'s Chest p\\. ", ""));
+        if (openChests.containsKey(p.getUniqueId()) && !e.getInventory().getName().endsWith("'s Trash")) {
+            Integer page = Integer.valueOf(e.getInventory().getName().replaceFirst("[\\S]+" + formatStrippedRegEx, ""));
             UUID openUuid = openChests.get(p.getUniqueId());
             HashMap<Integer, Inventory> chests = chestsMap.get(openUuid);
             chests.put(page, e.getInventory());
@@ -153,9 +165,9 @@ public class Main extends JavaPlugin implements Listener {
         if (!e.isCancelled() && e.getCurrentItem() != null && e.getCurrentItem().getItemMeta() != null && e.getCurrentItem().getItemMeta().getLore() != null && !e.getCurrentItem().getItemMeta().getLore().isEmpty() && e.getCurrentItem().getItemMeta().getLore().contains(identifier.get(0))) {
             Player p = (Player) e.getWhoClicked();
             UUID owner = openChests.get(p.getUniqueId());
-            if (e.getClickedInventory().getName().contains("'s Chest p. ")) {
+            if (openChests.containsKey(p.getUniqueId()) && !e.getInventory().getName().endsWith("'s Trash")) {
                 e.setCancelled(true);
-                Integer page = Integer.valueOf(e.getClickedInventory().getName().replaceFirst("[\\S]+'s Chest p\\. ", ""));
+                Integer page = Integer.valueOf(e.getClickedInventory().getName().replaceFirst("[\\S]+" + formatStrippedRegEx, ""));
                 HashMap<Integer, Inventory> chests;
                 Settings settings;
                 ItemStack item;
@@ -167,6 +179,9 @@ public class Main extends JavaPlugin implements Listener {
                         chests = chestsMap.get(owner);
                         chests.put(page, e.getClickedInventory());
                         chestsMap.put(owner, chests);
+                        if (!chestsMap.get(owner).containsKey(page - 1)) {
+                            Chests.formatChests(owner, settingsMap.get(owner).getName(), page - 1);
+                        }
                         p.openInventory(chestsMap.get(owner).get(page - 1));
                         if (cursor != null) {
                             p.setItemOnCursor(cursor);
@@ -179,6 +194,9 @@ public class Main extends JavaPlugin implements Listener {
                         chests = chestsMap.get(owner);
                         chests.put(page, e.getClickedInventory());
                         chestsMap.put(owner, chests);
+                        if (!chestsMap.get(owner).containsKey(page + 1)) {
+                            Chests.formatChests(owner, settingsMap.get(owner).getName(), page + 1);
+                        }
                         p.openInventory(chestsMap.get(owner).get(page + 1));
                         if (cursor2 != null) {
                             p.setItemOnCursor(cursor2);
@@ -313,7 +331,7 @@ public class Main extends JavaPlugin implements Listener {
             if (args.length == 0) {
                 if (!settingsMap.containsKey(p.getUniqueId())) {
                     settingsMap.put(p.getUniqueId(), Settings.load(p.getUniqueId()));
-                    Chests.formatChests(p.getUniqueId(), p.getName());
+                    Chests.formatChests(p.getUniqueId(), p.getName(), settingsMap.get(p.getUniqueId()).getLastPage());
                 }
                 if (settingsMap.get(p.getUniqueId()).getMax() != 0) {
                     p.openInventory(chestsMap.get(p.getUniqueId()).get(settingsMap.get(p.getUniqueId()).getLastPage()));
@@ -336,7 +354,7 @@ public class Main extends JavaPlugin implements Listener {
                     if (uuid != null) {
                         if (!settingsMap.containsKey(uuid)) {
                             settingsMap.put(uuid, Settings.load(uuid));
-                            Chests.formatChests(uuid, settingsMap.get(uuid).getName());
+                            Chests.formatChests(uuid, settingsMap.get(uuid).getName(), settingsMap.get(uuid).getLastPage());
                         }
                         p.openInventory(chestsMap.get(uuid).get(settingsMap.get(uuid).getLastPage()));
                         openChests.put(p.getUniqueId(), uuid);

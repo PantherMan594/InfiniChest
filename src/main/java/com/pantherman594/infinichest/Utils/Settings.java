@@ -58,7 +58,7 @@ public class Settings {
             settings.setName(con.getString("settings.lastname"));
             settings.setAutoPickup(con.getInt("settings.autopickup"));
             settings.setLastPage(con.getInt("settings.lastpage"));
-            for (int i = 1; i < settings.getMax(); i++) {
+            for (int i = 1; i <= settings.getMax(); i++) {
                 List<?> itemList = con.getList("items." + i);
                 if (itemList != null && !itemList.isEmpty()) {
                     ItemStack[] inv = itemList.toArray(new ItemStack[itemList.size()]);
@@ -79,7 +79,7 @@ public class Settings {
         }
         con.set("settings.autopickup", settings.getAutoPickup());
         con.set("settings.lastpage", settings.getLastPage());
-        for (int i = 1; i < settings.getMax(); i++) {
+        for (int i = 1; i <= settings.getMax(); i++) {
             if (Main.chestsMap.containsKey(settings.getUniqueId()) && Main.chestsMap.get(settings.getUniqueId()).containsKey(i)) {
                 ItemStack[] items = Main.chestsMap.get(settings.getUniqueId()).get(i).getContents();
                 boolean empty = true;
