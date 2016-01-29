@@ -1,1 +1,11 @@
+# Title to show at the top of each page
 title: '[name]''s Chest p. [page]'
+# Number of rows (+ 1 for the menu, enter 5 if you don't want the graphical "glitch")
+# IMPORTANT: Do not change if there are existing chests, otherwise they may be messed up.
+rows: 6
+# Time (seconds) between the chest autosaves
+saveInterval: 300
+# Enable the chest withdraw feature
+chestWithdraw: true
+# Enable the hopper transfer feature
+hopperTransfer: true

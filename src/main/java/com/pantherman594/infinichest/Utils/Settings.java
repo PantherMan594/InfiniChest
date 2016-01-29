@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 David Shen. All Rights Reserved.
+ * Copyright (c) 2016 David Shen. All Rights Reserved.
  * Created by PantherMan594.
  */
 
@@ -12,6 +12,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,61 +32,67 @@ public class Settings {
     private Integer lastPage = 1;
     private HashMap<Integer, ItemStack[]> items = new HashMap<>();
     private Integer max = 1;
+    private BukkitTask r;
 
-    public static Settings load(UUID uuid) {
+    public Settings(final UUID uuid) {
         boolean isNew = false;
-        if (!Main.plugin.getDataFolder().exists()) {
-            if (!Main.plugin.getDataFolder().mkdir()) {
+        if (!Main.getInstance().getDataFolder().exists()) {
+            if (!Main.getInstance().getDataFolder().mkdir()) {
                 Bukkit.getLogger().warning("Unable to create config folder!");
             }
         }
-        if (!new File(Main.plugin.getDataFolder() + File.separator + "playerdata").exists()) {
-            if (!new File(Main.plugin.getDataFolder() + File.separator + "playerdata").mkdir()) {
+        if (!new File(Main.getInstance().getDataFolder() + File.separator + "playerdata").exists()) {
+            if (!new File(Main.getInstance().getDataFolder() + File.separator + "playerdata").mkdir()) {
                 Bukkit.getLogger().warning("Unable to create playerdata folder!");
             }
         }
-        File f = new File(Main.plugin.getDataFolder() + File.separator + "playerdata" + File.separator + uuid.toString() + ".yml");
+        File f = new File(Main.getInstance().getDataFolder() + File.separator + "playerdata" + File.separator + uuid.toString() + ".yml");
         try {
             isNew = f.createNewFile();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        Settings settings = new Settings();
-        settings.setId(uuid);
-        settings.setMax(uuid);
+        setId(uuid);
+        setMax(uuid);
         if (!isNew) {
             FileConfiguration con = YamlConfiguration.loadConfiguration(f);
-            settings.setName(con.getString("settings.lastname"));
-            settings.setAutoPickup(con.getInt("settings.autopickup"));
-            settings.setLastPage(con.getInt("settings.lastpage"));
-            for (int i = 1; i <= settings.getMax(); i++) {
+            setName(con.getString("settings.lastname"));
+            setAutoPickup(con.getInt("settings.autopickup"));
+            setLastPage(con.getInt("settings.lastpage"));
+            for (int i = 1; i <= getMax(); i++) {
                 List<?> itemList = con.getList("items." + i);
                 if (itemList != null && !itemList.isEmpty()) {
                     ItemStack[] inv = itemList.toArray(new ItemStack[itemList.size()]);
-                    settings.setItems(inv, i);
+                    setItems(inv, i);
                 }
             }
         }
-        return settings;
+        r = Bukkit.getScheduler().runTaskTimer(Main.getInstance(), new Runnable() {
+            @Override
+            public void run() {
+                save();
+            }
+        }, (long) (Main.getInstance().getSaveInterval() * 20), (long) (Main.getInstance().getSaveInterval() * 20));
     }
 
-    public static void save(Settings settings) {
-        File f = new File(Main.plugin.getDataFolder() + File.separator + "playerdata" + File.separator + settings.getUniqueId() + ".yml");
+    public void save() {
+        r.cancel();
+        File f = new File(Main.getInstance().getDataFolder() + File.separator + "playerdata" + File.separator + getUniqueId() + ".yml");
         FileConfiguration con = YamlConfiguration.loadConfiguration(f);
-        if (Bukkit.getPlayer(settings.getUniqueId()) != null) {
-            con.set("settings.lastname", Bukkit.getPlayer(settings.getUniqueId()).getName());
+        if (Bukkit.getPlayer(getUniqueId()) != null) {
+            con.set("settings.lastname", Bukkit.getPlayer(getUniqueId()).getName());
         } else {
-            con.set("settings.lastname", settings.getName());
+            con.set("settings.lastname", getName());
         }
-        con.set("settings.autopickup", settings.getAutoPickup());
-        con.set("settings.lastpage", settings.getLastPage());
-        for (int i = 1; i <= settings.getMax(); i++) {
-            if (Main.chestsMap.containsKey(settings.getUniqueId()) && Main.chestsMap.get(settings.getUniqueId()).containsKey(i)) {
-                ItemStack[] items = Main.chestsMap.get(settings.getUniqueId()).get(i).getContents();
+        con.set("settings.autopickup", getAutoPickup());
+        con.set("settings.lastpage", getLastPage());
+        for (int i = 1; i <= getMax(); i++) {
+            if (Main.getInstance().getChestsMap().containsKey(getUniqueId()) && Main.getInstance().getChestsMap().get(getUniqueId()).containsKey(i)) {
+                ItemStack[] items = Main.getInstance().getChestsMap().get(getUniqueId()).get(i).getContents();
                 boolean empty = true;
-                for (int j = 0; j < 63; j++) {
+                for (int j = 0; j < 9 * Main.getInstance().getRows() + 9; j++) {
                     if (items[j] != null) {
-                        if (!items[j].getType().equals(Material.CHEST) && items[j].getItemMeta().getLore() != null && items[j].getItemMeta().getLore().contains(Main.identifier.get(0))) {
+                        if (!items[j].getType().equals(Material.CHEST) && items[j].getItemMeta().getLore() != null && items[j].getItemMeta().getLore().contains(Main.getInstance().getIdentifier().get(0))) {
                             items[j] = null;
                         } else {
                             empty = false;

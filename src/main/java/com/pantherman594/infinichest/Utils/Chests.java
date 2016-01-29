@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 David Shen. All Rights Reserved.
+ * Copyright (c) 2016 David Shen. All Rights Reserved.
  * Created by PantherMan594.
  */
 
@@ -26,22 +26,22 @@ import java.util.UUID;
  */
 public class Chests {
 
-    public static boolean addItem(UUID uuid, ItemStack stack) {
-        HashMap<Integer, Inventory> chests = Main.chestsMap.get(uuid);
+    public boolean addItem(UUID uuid, ItemStack stack) {
+        HashMap<Integer, Inventory> chests = Main.getInstance().getChestsMap().get(uuid);
         int i = 1;
         while (true) {
-            if (Main.settingsMap.get(uuid).getMax() < i) {
+            if (Main.getInstance().getSettingsMap().get(uuid).getMax() < i) {
                 return false;
             }
             Inventory chest = chests.get(i);
-            formatChests(uuid, Main.settingsMap.get(uuid).getName(), i);
+            formatChests(uuid, Main.getInstance().getSettingsMap().get(uuid).getName(), i);
             if (chest != null) {
-                for (int j = 0; j < 54; j++) {
+                for (int j = 0; j < 9 * Main.getInstance().getRows(); j++) {
                     ItemStack item = chest.getItem(j);
                     if (item == null || item.getType() == Material.AIR) {
                         chest.setItem(j, stack);
                         chests.put(i, chest);
-                        Main.chestsMap.put(uuid, chests);
+                        Main.getInstance().getChestsMap().put(uuid, chests);
                         return true;
                     } else if (item != null && item.isSimilar(stack)) {
                         int amt = item.getAmount() + stack.getAmount();
@@ -53,7 +53,7 @@ public class Chests {
                             item.setAmount(amt);
                             chest.setItem(j, item);
                             chests.put(i, chest);
-                            Main.chestsMap.put(uuid, chests);
+                            Main.getInstance().getChestsMap().put(uuid, chests);
                             return true;
                         }
                     }
@@ -71,32 +71,32 @@ public class Chests {
     //45 46 47 48 49 50 51 52 53
     //54 55 56 57 58 59 60 61 62
 
-    public static void formatChests(UUID uuid, String name, int i) {
+    public void formatChests(UUID uuid, String name, int i) {
         HashMap<Integer, Inventory> chests;
-        if (Main.chestsMap.containsKey(uuid)) {
-            chests = Main.chestsMap.get(uuid);
+        if (Main.getInstance().getChestsMap().containsKey(uuid)) {
+            chests = Main.getInstance().getChestsMap().get(uuid);
             if (chests.get(i) != null) {
                 return;
             }
         } else {
             chests = new HashMap<>();
         }
-        String title = Main.color(Main.format.replace("[name]", name).replace("[page]", "" + i));
+        String title = Main.color(Main.getInstance().getFormat().replace("[name]", name).replace("[page]", "" + i));
         while (title.length() > 32) {
             title = title.replace(name, name.substring(0, name.length() - 1));
         }
         if (String.valueOf(i).endsWith("0")) {
             Bukkit.getLogger().info(title);
         }
-        Inventory chest = Bukkit.createInventory(null, 63, title);
-        if (Main.settingsMap.get(uuid).getItems().containsKey(i)) {
-            chest.setContents(Main.settingsMap.get(uuid).getItems().get(i));
+        Inventory chest = Bukkit.createInventory(null, 9 * Main.getInstance().getRows() + 9, title);
+        if (Main.getInstance().getSettingsMap().get(uuid).getItems().containsKey(i)) {
+            chest.setContents(Main.getInstance().getSettingsMap().get(uuid).getItems().get(i));
         }
-        for (int j = 54; j < 63; j++) {
+        for (int j = 9 * Main.getInstance().getRows(); j < 9 * Main.getInstance().getRows() + 9; j++) {
             ItemStack item = null;
             ItemMeta meta = null;
             List<String> lore = new ArrayList<>();
-            if (j < 57) {
+            if (j < 9 * Main.getInstance().getRows() + 3) {
                 if (i > 1) {
                     item = new ItemStack(Material.STAINED_GLASS_PANE, 1, DyeColor.LIME.getData());
                     meta = item.getItemMeta();
@@ -106,14 +106,14 @@ public class Chests {
                     meta = item.getItemMeta();
                     meta.setDisplayName("" + ChatColor.RED + ChatColor.BOLD + "No Previous Page");
                 }
-            } else if (j == 57) {
+            } else if (j == 9 * Main.getInstance().getRows() + 3) {
                 item = new ItemStack(Material.BARRIER, 1);
                 meta = item.getItemMeta();
                 meta.setDisplayName("" + ChatColor.RED + ChatColor.BOLD + "TRASH");
-            } else if (j == 58) {
+            } else if (j == 9 * Main.getInstance().getRows() + 4) {
                 item = new ItemStack(Material.HOPPER, 1);
                 meta = item.getItemMeta();
-                switch (Main.settingsMap.get(uuid).getAutoPickup()) {
+                switch (Main.getInstance().getSettingsMap().get(uuid).getAutoPickup()) {
                     case 0:
                         meta.setDisplayName("" + ChatColor.AQUA + ChatColor.BOLD + "Auto Pickup: Disabled");
                         break;
@@ -124,14 +124,18 @@ public class Chests {
                         meta.setDisplayName("" + ChatColor.AQUA + ChatColor.BOLD + "Auto Pickup: On Full Inventory");
                         break;
                 }
-            } else if (j == 59) {
+            } else if (j == 9 * Main.getInstance().getRows() + 5) {
                 item = new ItemStack(Material.TRAPPED_CHEST, 1);
                 meta = item.getItemMeta();
                 meta.setDisplayName("" + ChatColor.GOLD + ChatColor.BOLD + "Chest");
-                lore.add(ChatColor.BLUE + "Click to withdraw chest");
-                lore.add(ChatColor.BLUE + "Shift click to get hopper transfer block");
-            } else if (j > 59) {
-                if (i < Main.settingsMap.get(uuid).getMax()) {
+                if (Main.getInstance().isChestWithdraw()) {
+                    lore.add(ChatColor.BLUE + "Click to withdraw chest");
+                }
+                if (Main.getInstance().isHopperTransfer()) {
+                    lore.add(ChatColor.BLUE + "Shift click to get hopper transfer block");
+                }
+            } else if (j > 9 * Main.getInstance().getRows() + 5) {
+                if (i < Main.getInstance().getSettingsMap().get(uuid).getMax()) {
                     item = new ItemStack(Material.STAINED_GLASS_PANE, 1, DyeColor.LIME.getData());
                     meta = item.getItemMeta();
                     meta.setDisplayName("" + ChatColor.GREEN + ChatColor.BOLD + "Next Page");
@@ -142,7 +146,7 @@ public class Chests {
                 }
             }
             if (meta != null) {
-                lore.addAll(Main.identifier);
+                lore.addAll(Main.getInstance().getIdentifier());
                 meta.setLore(lore);
             }
             item.setItemMeta(meta);
@@ -150,19 +154,19 @@ public class Chests {
         }
         chests.put(i, chest);
         setEmptyTrash(uuid, name);
-        Main.chestsMap.put(uuid, chests);
+        Main.getInstance().getChestsMap().put(uuid, chests);
     }
 
-    public static void setEmptyTrash(UUID uuid, String name) {
+    public void setEmptyTrash(UUID uuid, String name) {
         Inventory trash = Bukkit.createInventory(null, 54, name + "'s Trash");
         ItemStack exitTrashItem = new ItemStack(Material.STAINED_GLASS_PANE, 1, DyeColor.RED.getData());
         ItemMeta exitTrashMeta = exitTrashItem.getItemMeta();
-        exitTrashMeta.setLore(Main.identifier);
+        exitTrashMeta.setLore(Main.getInstance().getIdentifier());
         exitTrashMeta.setDisplayName(ChatColor.BOLD + "Exit Trash");
         exitTrashItem.setItemMeta(exitTrashMeta);
         ItemStack emptyTrashItem = new ItemStack(Material.BARRIER, 1);
         ItemMeta emptyTrashMeta = emptyTrashItem.getItemMeta();
-        emptyTrashMeta.setLore(Main.identifier);
+        emptyTrashMeta.setLore(Main.getInstance().getIdentifier());
         emptyTrashMeta.setDisplayName("" + ChatColor.RED + ChatColor.BOLD + "Empty Trash");
         emptyTrashItem.setItemMeta(emptyTrashMeta);
         for (int i = 0; i < 6; i++) {
@@ -170,6 +174,6 @@ public class Chests {
             trash.setItem(j, exitTrashItem);
             trash.setItem(j + 8, emptyTrashItem);
         }
-        Main.trashMap.put(uuid, trash);
+        Main.getInstance().getTrashMap().put(uuid, trash);
     }
 }

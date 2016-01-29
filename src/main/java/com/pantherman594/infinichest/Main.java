@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 David Shen. All Rights Reserved.
+ * Copyright (c) 2016 David Shen. All Rights Reserved.
  * Created by PantherMan594.
  */
 
@@ -21,6 +21,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -32,7 +33,6 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -45,54 +45,62 @@ import java.util.logging.Level;
  * @author David
  */
 public class Main extends JavaPlugin implements Listener {
-    public static Plugin plugin;
-    public static FileConfiguration config;
-    public static String format;
-    public static String formatStripped;
-    public static String formatStrippedRegEx;
-    public static HashMap<UUID, Settings> settingsMap = new HashMap<>();
-    public static HashMap<UUID, HashMap<Integer, Inventory>> chestsMap = new HashMap<>();
-    public static HashMap<UUID, Inventory> trashMap = new HashMap<>();
-    public static HashMap<UUID, UUID> openChests = new HashMap<>();
-    public static HashMap<UUID, ArrayList<UUID>> openedOthers = new HashMap<>();
-    public static HashMap<UUID, ItemStack> tempItem = new HashMap<>();
-    public static List<String> identifier = new ArrayList<>();
+    private static Main instance;
+    private FileConfiguration config;
+    private String format;
+    private String formatStrippedRegEx;
+    private HashMap<UUID, Settings> settingsMap = new HashMap<>();
+    private HashMap<UUID, HashMap<Integer, Inventory>> chestsMap = new HashMap<>();
+    private HashMap<UUID, Inventory> trashMap = new HashMap<>();
+    private HashMap<UUID, UUID> openChests = new HashMap<>();
+    private HashMap<UUID, ArrayList<UUID>> openedOthers = new HashMap<>();
+    private HashMap<UUID, ItemStack> tempItem = new HashMap<>();
+    private List<String> identifier = new ArrayList<>();
+    private boolean chestWithdraw;
+    private boolean hopperTransfer;
+    private Integer rows;
+    private Integer saveInterval;
 
     public static String color(String str) {
         return ChatColor.translateAlternateColorCodes('&', str);
     }
 
+    public static Main getInstance() {
+        return instance;
+    }
+
     @Override
     public void onEnable() {
         this.saveDefaultConfig();
-        plugin = this;
+        instance = this;
         config = this.getConfig();
-        format = config.getString("title");
-        formatStripped = format.replace("[name]", "").replace("[page]", "").replace("&", "§");
+        format = config.getString("title", "[name]'s Chest p. [page]");
+        String formatStripped = format.replace("[name]", "").replace("[page]", "").replace("&", "§");
         if (formatStripped.length() > 28) {
-            format = "[name]'s Chest p. [page]";
             formatStripped = "'s Chest p. ";
             getLogger().warning("Chest title too long, chest titles can be a maximum of 32 characters (including colors, names, and page numbers).");
         }
         formatStrippedRegEx = formatStripped.replace("\\", "\\\\").replace(".", "\\.").replace("(", "\\(").replace(")", "\\)").replace("?", "\\?");
         identifier.add(ChatColor.BLACK + "*");
+        saveInterval = config.getInt("saveInterval", 300);
+        chestWithdraw = config.getBoolean("chestWithdraw", true);
+        hopperTransfer = config.getBoolean("hopperTransfer", true);
+        rows = config.getInt("rows", 6);
         Bukkit.getServer().getPluginManager().registerEvents(this, this);
         for (Player p : Bukkit.getOnlinePlayers()) {
-            if (!settingsMap.containsKey(p.getUniqueId())) {
-                settingsMap.put(p.getUniqueId(), Settings.load(p.getUniqueId()));
-                Chests.formatChests(p.getUniqueId(), p.getName(), settingsMap.get(p.getUniqueId()).getLastPage());
-            }
+            settingsMap.put(p.getUniqueId(), new Settings(p.getUniqueId()));
+            new Chests().formatChests(p.getUniqueId(), p.getName(), settingsMap.get(p.getUniqueId()).getLastPage());
         }
     }
 
     @Override
     public void onDisable() {
         for (Player p : Bukkit.getOnlinePlayers()) {
-            Settings.save(settingsMap.get(p.getUniqueId()));
+            settingsMap.get(p.getUniqueId()).save();
             settingsMap.remove(p.getUniqueId());
             if (openedOthers.containsKey(p.getUniqueId())) {
                 for (UUID uuid : openedOthers.get(p.getUniqueId())) {
-                    Settings.save(settingsMap.get(uuid));
+                    settingsMap.get(uuid).save();
                     settingsMap.remove(uuid);
                 }
             }
@@ -101,20 +109,18 @@ public class Main extends JavaPlugin implements Listener {
 
     @EventHandler
     public void join(PlayerJoinEvent e) {
-        Player p = e.getPlayer();
-        if (!settingsMap.containsKey(p.getUniqueId())) {
-            settingsMap.put(p.getUniqueId(), Settings.load(p.getUniqueId()));
-            Chests.formatChests(p.getUniqueId(), p.getName(), settingsMap.get(p.getUniqueId()).getLastPage());
-        }
+        final Player p = e.getPlayer();
+        settingsMap.put(p.getUniqueId(), new Settings(p.getUniqueId()));
+        new Chests().formatChests(p.getUniqueId(), p.getName(), settingsMap.get(p.getUniqueId()).getLastPage());
     }
 
     @EventHandler
     public void quit(PlayerQuitEvent e) {
-        Settings.save(settingsMap.get(e.getPlayer().getUniqueId()));
+        settingsMap.get(e.getPlayer().getUniqueId()).save();
         settingsMap.remove(e.getPlayer().getUniqueId());
         if (openedOthers.containsKey(e.getPlayer().getUniqueId())) {
             for (UUID uuid : openedOthers.get(e.getPlayer().getUniqueId())) {
-                Settings.save(settingsMap.get(uuid));
+                settingsMap.get(uuid).save();
                 settingsMap.remove(uuid);
             }
         }
@@ -180,7 +186,7 @@ public class Main extends JavaPlugin implements Listener {
                         chests.put(page, e.getClickedInventory());
                         chestsMap.put(owner, chests);
                         if (!chestsMap.get(owner).containsKey(page - 1)) {
-                            Chests.formatChests(owner, settingsMap.get(owner).getName(), page - 1);
+                            new Chests().formatChests(owner, settingsMap.get(owner).getName(), page - 1);
                         }
                         p.openInventory(chestsMap.get(owner).get(page - 1));
                         if (cursor != null) {
@@ -195,7 +201,7 @@ public class Main extends JavaPlugin implements Listener {
                         chests.put(page, e.getClickedInventory());
                         chestsMap.put(owner, chests);
                         if (!chestsMap.get(owner).containsKey(page + 1)) {
-                            Chests.formatChests(owner, settingsMap.get(owner).getName(), page + 1);
+                            new Chests().formatChests(owner, settingsMap.get(owner).getName(), page + 1);
                         }
                         p.openInventory(chestsMap.get(owner).get(page + 1));
                         if (cursor2 != null) {
@@ -237,7 +243,7 @@ public class Main extends JavaPlugin implements Listener {
                         settingsMap.put(owner, settings);
                         break;
                     case "6lChest":
-                        if (p.getInventory().firstEmpty() >= 0) {
+                        if ((chestWithdraw || hopperTransfer) && p.getInventory().firstEmpty() >= 0) {
                             if (p.getInventory().contains(Material.CHEST)) {
                                 for (int i = 0; i < 36; i++) {
                                     ItemStack stack = p.getInventory().getItem(i);
@@ -247,12 +253,12 @@ public class Main extends JavaPlugin implements Listener {
                                         ItemStack cStack = new ItemStack(Material.CHEST, 1);
                                         ItemMeta cMeta = cStack.getItemMeta();
                                         List<String> lore = new ArrayList<>();
-                                        if (e.getClick().equals(ClickType.LEFT) || e.getClick().equals(ClickType.RIGHT)) {
+                                        if ((e.getClick().equals(ClickType.LEFT) || e.getClick().equals(ClickType.RIGHT)) && chestWithdraw) {
                                             lore.add(ChatColor.GOLD + "Chest Withdrawal");
                                             lore.add(ChatColor.BLUE + "Place me and open!");
                                             lore.add(ChatColor.BLACK + owner.toString());
                                             lore.add(ChatColor.BLACK + page.toString());
-                                        } else if (e.getClick().equals(ClickType.SHIFT_LEFT) || e.getClick().equals(ClickType.SHIFT_RIGHT)) {
+                                        } else if ((e.getClick().equals(ClickType.SHIFT_LEFT) || e.getClick().equals(ClickType.SHIFT_RIGHT)) && hopperTransfer) {
                                             cMeta.setDisplayName(ChatColor.BLACK + "h;" + owner.toString());
                                             lore.add(ChatColor.GOLD + "Hopper Chest");
                                             lore.add(ChatColor.BLUE + "Place me and attach a hopper!");
@@ -318,7 +324,7 @@ public class Main extends JavaPlugin implements Listener {
                         break;
                     case "clEmpty Trash":
                         p.closeInventory();
-                        Chests.setEmptyTrash(owner, e.getClickedInventory().getName().replace("'s Trash", ""));
+                        new Chests().setEmptyTrash(owner, e.getClickedInventory().getName().replace("'s Trash", ""));
                         break;
                 }
             }
@@ -330,8 +336,8 @@ public class Main extends JavaPlugin implements Listener {
             Player p = (Player) se;
             if (args.length == 0) {
                 if (!settingsMap.containsKey(p.getUniqueId())) {
-                    settingsMap.put(p.getUniqueId(), Settings.load(p.getUniqueId()));
-                    Chests.formatChests(p.getUniqueId(), p.getName(), settingsMap.get(p.getUniqueId()).getLastPage());
+                    settingsMap.put(p.getUniqueId(), new Settings(p.getUniqueId()));
+                    new Chests().formatChests(p.getUniqueId(), p.getName(), settingsMap.get(p.getUniqueId()).getLastPage());
                 }
                 if (settingsMap.get(p.getUniqueId()).getMax() != 0) {
                     p.openInventory(chestsMap.get(p.getUniqueId()).get(settingsMap.get(p.getUniqueId()).getLastPage()));
@@ -342,7 +348,7 @@ public class Main extends JavaPlugin implements Listener {
             } else {
                 if (p.hasPermission("InfiniChest.others")) {
                     UUID uuid = null;
-                    String dir = plugin.getDataFolder() + File.separator + "playerdata" + File.separator;
+                    String dir = getDataFolder() + File.separator + "playerdata" + File.separator;
                     if (new File(dir + args[0] + ".yml").exists()) {
                         uuid = UUID.fromString(args[0]);
                     } else {
@@ -353,8 +359,8 @@ public class Main extends JavaPlugin implements Listener {
                     }
                     if (uuid != null) {
                         if (!settingsMap.containsKey(uuid)) {
-                            settingsMap.put(uuid, Settings.load(uuid));
-                            Chests.formatChests(uuid, settingsMap.get(uuid).getName(), settingsMap.get(uuid).getLastPage());
+                            settingsMap.put(uuid, new Settings(uuid));
+                            new Chests().formatChests(uuid, settingsMap.get(uuid).getName(), settingsMap.get(uuid).getLastPage());
                         }
                         p.openInventory(chestsMap.get(uuid).get(settingsMap.get(uuid).getLastPage()));
                         openChests.put(p.getUniqueId(), uuid);
@@ -387,11 +393,11 @@ public class Main extends JavaPlugin implements Listener {
                     stack.setAmount(amount);
                 }
                 if (settingsMap.get(p.getUniqueId()).getAutoPickup() == 1) {
-                    if (e.getPlayer().getGameMode() != GameMode.CREATIVE && Chests.addItem(p.getUniqueId(), stack)) {
+                    if (e.getPlayer().getGameMode() != GameMode.CREATIVE && new Chests().addItem(p.getUniqueId(), stack)) {
                         e.getBlock().setType(Material.AIR);
                     }
                 } else if (settingsMap.get(p.getUniqueId()).getAutoPickup() == 2 && addItemInventory(p, stack) > 0) {
-                    if (e.getPlayer().getGameMode() != GameMode.CREATIVE && Chests.addItem(p.getUniqueId(), stack)) {
+                    if (e.getPlayer().getGameMode() != GameMode.CREATIVE && new Chests().addItem(p.getUniqueId(), stack)) {
                         e.getBlock().setType(Material.AIR);
                     }
                 }
@@ -399,7 +405,7 @@ public class Main extends JavaPlugin implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void blockPlace(BlockPlaceEvent e) {
         ItemStack hand = e.getItemInHand();
         if (!e.isCancelled() && e.canBuild() && hand.getType().equals(Material.CHEST) && !hand.getItemMeta().getLore().isEmpty() && hand.getItemMeta().getLore().contains(identifier.get(0)) && hand.getItemMeta().getLore().contains(ChatColor.GOLD + "Chest Withdrawal")) {
@@ -409,13 +415,13 @@ public class Main extends JavaPlugin implements Listener {
             HashMap<Integer, Inventory> chests = chestsMap.get(uuid);
             Inventory chestInv = chests.get(page);
             Chest chest = (Chest) e.getBlock().getState();
-            for (int i = 0; i < 45; i++) {
-                if (chest.getInventory().firstEmpty() >= 0) {
-                    if (chestInv.getContents()[i] != null) {
-                        chest.getInventory().setItem(chest.getInventory().firstEmpty(), chestInv.getContents()[i]);
-                        chestInv.clear(i);
-                    }
+            int i = 0;
+            while (chest.getInventory().firstEmpty() >= 0) {
+                if (chestInv.getContents()[i] != null) {
+                    chest.getInventory().setItem(chest.getInventory().firstEmpty(), chestInv.getContents()[i]);
+                    chestInv.clear(i);
                 }
+                i++;
             }
         }
     }
@@ -423,7 +429,7 @@ public class Main extends JavaPlugin implements Listener {
     @EventHandler
     public void hopperTransfer(InventoryMoveItemEvent e) {
         if (!e.isCancelled() && e.getDestination().getName().startsWith(ChatColor.BLACK + "h;")) {
-            Chests.addItem(UUID.fromString(e.getDestination().getName().split(";")[1]), e.getItem());
+            new Chests().addItem(UUID.fromString(e.getDestination().getName().split(";")[1]), e.getItem());
             final Inventory inv = e.getDestination();
             Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
                 @Override
@@ -431,7 +437,7 @@ public class Main extends JavaPlugin implements Listener {
                     while (true) {
                         if (inv.firstEmpty() != 0) {
                             inv.clear();
-                            break;
+                            return;
                         }
                     }
                 }
@@ -445,13 +451,13 @@ public class Main extends JavaPlugin implements Listener {
         if (settingsMap.get(p.getUniqueId()).getAutoPickup() > 0 && !e.isCancelled()) {
             ItemStack stack = e.getItem().getItemStack();
             if (settingsMap.get(p.getUniqueId()).getAutoPickup() == 1) {
-                Chests.addItem(p.getUniqueId(), stack);
+                new Chests().addItem(p.getUniqueId(), stack);
                 e.getItem().remove();
                 e.setCancelled(true);
             } else if (settingsMap.get(p.getUniqueId()).getAutoPickup() == 2) {
                 stack.setAmount(addItemInventory(p, stack));
                 if (stack.getAmount() > 0) {
-                    Chests.addItem(p.getUniqueId(), stack);
+                    new Chests().addItem(p.getUniqueId(), stack);
                     e.getItem().remove();
                     e.setCancelled(true);
                 }
@@ -490,24 +496,19 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     public UUID nameToUUID(String name) {
-        UUID id = null;
         if (name == null) {
-            return id;
+            return null;
         } else {
-            for (Player p : Bukkit.getServer().getOnlinePlayers()) {
-                if (p.getName().equalsIgnoreCase(name)) {
-                    id = p.getUniqueId();
-                    break;
-                }
-            }
-            if (id == null && Bukkit.getServer().getOnlineMode()) {
-                UUIDFetcher fetcher = new UUIDFetcher(Arrays.asList(name));
+            UUID id = Bukkit.getServer().getOfflinePlayer(name).getUniqueId();
+            if (Bukkit.getPlayer(name) != null) {
+                id = Bukkit.getPlayer(name).getUniqueId();
+            } else if (Bukkit.getServer().getOnlineMode()) {
+                UUIDFetcher fetcher = new UUIDFetcher(Collections.singletonList(name));
                 try {
                     Map e1 = fetcher.call();
-                    Iterator iter = e1.entrySet().iterator();
 
-                    while (iter.hasNext()) {
-                        Map.Entry entry = (Map.Entry) iter.next();
+                    for (Object o : e1.entrySet()) {
+                        Map.Entry entry = (Map.Entry) o;
                         if (name.equalsIgnoreCase((String) entry.getKey())) {
                             id = (UUID) entry.getValue();
                             break;
@@ -516,11 +517,54 @@ public class Main extends JavaPlugin implements Listener {
                 } catch (Exception e) {
                     this.getLogger().log(Level.SEVERE, "Exception on online UUID fetch", e);
                 }
-            } else if (id == null && !Bukkit.getServer().getOnlineMode()) {
-                id = Bukkit.getServer().getOfflinePlayer(name).getUniqueId();
             }
 
             return id;
         }
+    }
+
+    @Override
+    public FileConfiguration getConfig() {
+        return config;
+    }
+
+    public String getFormat() {
+        return format;
+    }
+
+    public String getFormatStrippedRegEx() {
+        return formatStrippedRegEx;
+    }
+
+    public HashMap<UUID, Settings> getSettingsMap() {
+        return settingsMap;
+    }
+
+    public HashMap<UUID, HashMap<Integer, Inventory>> getChestsMap() {
+        return chestsMap;
+    }
+
+    public HashMap<UUID, Inventory> getTrashMap() {
+        return trashMap;
+    }
+
+    public List<String> getIdentifier() {
+        return identifier;
+    }
+
+    public boolean isChestWithdraw() {
+        return chestWithdraw;
+    }
+
+    public boolean isHopperTransfer() {
+        return hopperTransfer;
+    }
+
+    public Integer getRows() {
+        return rows;
+    }
+
+    public Integer getSaveInterval() {
+        return saveInterval;
     }
 }
