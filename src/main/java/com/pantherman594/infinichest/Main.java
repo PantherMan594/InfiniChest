@@ -8,10 +8,7 @@ package com.pantherman594.infinichest;
 import com.evilmidget38.UUIDFetcher;
 import com.pantherman594.infinichest.Utils.Chests;
 import com.pantherman594.infinichest.Utils.Settings;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.GameMode;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.block.Chest;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -44,6 +41,7 @@ import java.util.logging.Level;
  *
  * @author David
  */
+@SuppressWarnings({"WeakerAccess", "unused"})
 public class Main extends JavaPlugin implements Listener {
     private static Main instance;
     private FileConfiguration config;
@@ -73,7 +71,7 @@ public class Main extends JavaPlugin implements Listener {
     public void onEnable() {
         this.saveDefaultConfig();
         instance = this;
-        config = this.getConfig();
+        config = super.getConfig();
         format = config.getString("title", "[name]'s Chest p. [page]");
         String formatStripped = format.replace("[name]", "").replace("[page]", "").replace("&", "§");
         if (formatStripped.length() > 28) {
@@ -405,7 +403,7 @@ public class Main extends JavaPlugin implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void blockPlace(BlockPlaceEvent e) {
         ItemStack hand = e.getItemInHand();
         if (!e.isCancelled() && e.canBuild() && hand.getType().equals(Material.CHEST) && !hand.getItemMeta().getLore().isEmpty() && hand.getItemMeta().getLore().contains(identifier.get(0)) && hand.getItemMeta().getLore().contains(ChatColor.GOLD + "Chest Withdrawal")) {
@@ -413,16 +411,23 @@ public class Main extends JavaPlugin implements Listener {
             UUID uuid = UUID.fromString(lore.get(2).substring(2));
             Integer page = Integer.valueOf(lore.get(3).substring(2));
             HashMap<Integer, Inventory> chests = chestsMap.get(uuid);
-            Inventory chestInv = chests.get(page);
-            Chest chest = (Chest) e.getBlock().getState();
-            int i = 0;
-            while (chest.getInventory().firstEmpty() >= 0) {
-                if (chestInv.getContents()[i] != null) {
-                    chest.getInventory().setItem(chest.getInventory().firstEmpty(), chestInv.getContents()[i]);
-                    chestInv.clear(i);
+            final Inventory chestInv = chests.get(page);
+            final Location loc = e.getBlock().getLocation();
+            Bukkit.getScheduler().runTaskLater(this, () -> {
+                if (loc.getBlock().getState() instanceof Chest) {
+                    Chest chest = (Chest) loc.getBlock().getState();
+                    int i = 0;
+                    while (chest.getInventory().firstEmpty() >= 0) {
+                        if (chestInv.getContents()[i] != null) {
+                            chest.getInventory().setItem(chest.getInventory().firstEmpty(), chestInv.getContents()[i]);
+                            chestInv.clear(i);
+                        }
+                        i++;
+                    }
+                } else {
+                    getLogger().info("not chest");
                 }
-                i++;
-            }
+            }, 20);
         }
     }
 
@@ -431,14 +436,11 @@ public class Main extends JavaPlugin implements Listener {
         if (!e.isCancelled() && e.getDestination().getName().startsWith(ChatColor.BLACK + "h;")) {
             new Chests().addItem(UUID.fromString(e.getDestination().getName().split(";")[1]), e.getItem());
             final Inventory inv = e.getDestination();
-            Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
-                @Override
-                public void run() {
-                    while (true) {
-                        if (inv.firstEmpty() != 0) {
-                            inv.clear();
-                            return;
-                        }
+            Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+                while (true) {
+                    if (inv.firstEmpty() != 0) {
+                        inv.clear();
+                        return;
                     }
                 }
             });
@@ -465,7 +467,7 @@ public class Main extends JavaPlugin implements Listener {
         }
     }
 
-    public boolean checkNearbyItem(Player p) {
+    private boolean checkNearbyItem(Player p) {
         for (Entity e : p.getNearbyEntities(1.5, 1.5, 1.5)) {
             if (e.getType() == EntityType.DROPPED_ITEM) {
                 return true;
@@ -495,7 +497,7 @@ public class Main extends JavaPlugin implements Listener {
         return 0;
     }
 
-    public UUID nameToUUID(String name) {
+    private UUID nameToUUID(String name) {
         if (name == null) {
             return null;
         } else {

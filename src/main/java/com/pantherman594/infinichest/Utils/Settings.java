@@ -25,6 +25,7 @@ import java.util.UUID;
  *
  * @author David
  */
+@SuppressWarnings({"SuspiciousToArrayCall", "WeakerAccess"})
 public class Settings {
     private String name;
     private UUID uuid;
@@ -67,12 +68,7 @@ public class Settings {
                 }
             }
         }
-        r = Bukkit.getScheduler().runTaskTimer(Main.getInstance(), new Runnable() {
-            @Override
-            public void run() {
-                save();
-            }
-        }, (long) (Main.getInstance().getSaveInterval() * 20), (long) (Main.getInstance().getSaveInterval() * 20));
+        r = Bukkit.getScheduler().runTaskTimer(Main.getInstance(), this::save, (long) (Main.getInstance().getSaveInterval() * 20), (long) (Main.getInstance().getSaveInterval() * 20));
     }
 
     public void save() {
